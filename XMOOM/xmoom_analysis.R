@@ -1,7 +1,7 @@
 
 # X-MOOM数据分析
 
-# 加载包
+# 加载包 =============================================================================
 library(tidyverse)
 library(recharts)
 library(lubridate)
@@ -9,14 +9,13 @@ library(plotly)
 library(ggthemes)
 library(crosstalk)
 library(DT)
-library(gmodels)
-
 options(digits = 2)
 
-# 导入数据
-sale_2013_2017 <- read.csv(file = "sale_2013_2017.csv", 
-                           stringsAsFactors = FALSE, 
-                           header = TRUE)
+# 导入数据 ==========================================================================
+sale_2013_2017 <- read.table('E:/dianjia/project_data/xmoom/sale_2013_2017.csv',
+                             sep = ',', 
+                             header = TRUE, 
+                             stringsAsFactors = FALSE)
 
 View(head(sale_2013_2017))
 ## 数据汇总
@@ -53,7 +52,6 @@ prop.table(llb_year_quarter, 1)
 #### 商品数量、金额上下半年的比例约为：4：6
 #### 金额：Q1至Q4的比例约为：0.22：0.18：0.22：0.38
 #### 数量：Q1至Q4的比例约为：0.18：0.22：0.28：0.32
-
 
 
 ### 年+月+商品季节
