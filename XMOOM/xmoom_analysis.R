@@ -17,7 +17,8 @@ sale_2013_2017 <- read.table('E:/dianjia/project_data/xmoom/sale_2013_2017.csv',
                              header = TRUE, 
                              stringsAsFactors = FALSE)
 
-View(head(sale_2013_2017))
+# View(head(sale_2013_2017, 100))
+
 ## 数据汇总
 
 ### 年
