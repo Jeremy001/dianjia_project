@@ -16,8 +16,84 @@ sale_2013_2017 <- read.table('E:/dianjia/project_data/xmoom/sale_2013_2017.csv',
                              sep = ',', 
                              header = TRUE, 
                              stringsAsFactors = FALSE)
+stock_20180101 <- read.table('E:/dianjia/project_data/xmoom/stock_20180101.csv', 
+                             sep = ',', 
+                             header = TRUE, 
+                             stringsAsFactors = FALSE)
+str(stock_20180101)
 
-# View(head(sale_2013_2017, 100))
+names(stock_20180101) <- c('goods_id', 'stock_num', 'stock_sale_amount', 'stock_cost_amount')
+
+sale_q23_goods <- sale_2013_2017 %>% 
+  filter(sale_year >= 2016, 
+         sale_quarter %in% c(2, 3)) %>% 
+  group_by(sale_year, sale_quarter, cat1_name, goods_id, goods_name, 
+           goods_year, goods_season) %>% 
+  summarise(goods_num = sum(goods_num, na.rm = TRUE), 
+            sale_amount = sum(sale_amount, na.rm = TRUE), 
+            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
+  left_join(y = stock_20180101, by = c('goods_id' = 'goods_id'))
+
+sale_q23_goods[is.na(sale_q23_goods$stock_num), "stock_num"] <- 0
+sale_q23_goods[is.na(sale_q23_goods$stock_sale_amount), "stock_sale_amount"] <- 0
+sale_q23_goods[is.na(sale_q23_goods$stock_cost_amount), "stock_cost_amount"] <- 0
+
+
+sale_q23_goods %>% 
+  group_by(sale_year) %>% 
+  summarise(n_na = sum(is.na(stock_num)), 
+            n_total = n())
+
+
+str()
+
+View(head(sale_q23_goods, 100))
+
+
+
+
+
+write.csv(sale_q23_goods, 
+          file = 'E:/dianjia/project_data/xmoom/sale_q23_goods.csv', 
+          row.names = FALSE, 
+          fileEncoding = 'utf-8')
+
+
+
+
+sale_201317_t <- sale_2013_2017 %>% 
+  group_by(sale_year, sale_quarter, sale_month, cat1_id, cat1_name, cat2_id, cat2_name, 
+           goods_year, goods_season, boduan_name, origin_price) %>% 
+  summarise(goods_num = sum(goods_num, na.rm = TRUE), 
+            sale_amount = sum(sale_amount, na.rm = TRUE), 
+            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
+  filter(goods_num != 0, sale_amount != 0)
+
+write.csv(sale_201317_t, 
+          file = 'E:/dianjia/project_data/xmoom/sale_201317_t.csv', 
+          row.names = FALSE, 
+          fileEncoding = 'utf-8')
+
+
+
+View(head(sale_201617_t, 100))
+
+
+str(sale_201317_t)
+
+
+
+sale_201617_2 <- read.table('E:/dianjia/project_data/xmoom/sale_201317_t.csv',
+                            sep = ',', 
+                            header = TRUE, 
+                            stringsAsFactors = FALSE)
+
+
+head(sale_201617_2)
+
+
+
+
 
 ## 数据汇总
 
