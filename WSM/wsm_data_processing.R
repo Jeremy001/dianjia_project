@@ -5,33 +5,38 @@ library(tidyverse)
 library(lubridate)
 library(plotly)
 library(crosstalk)
+library(mice)
 
 # 加载数据 ============================================================
 ## 2017销售明细
-wsm_sale_2017 <- read.table(file = "./wsm_sale_2017.txt", 
+wsm_sale_2017 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_sale_2017.csv", 
                             header = TRUE, 
-                            sep = '\t', 
-                             fileEncoding = 'utf-16',
-                             stringsAsFactors = FALSE)
+                            sep = ',', 
+                            stringsAsFactors = FALSE)
+
+### 查看数据
+View(head(wsm_sale_2017, 100))
+View(tail(wsm_sale_2017, 100))
+str(wsm_sale_2017)
+### 数据格式
 wsm_sale_2017$sale_date <- as.Date(wsm_sale_2017$sale_date)
+wsm_sale_2017$sale_year <- year(wsm_sale_2017$sale_date)
 wsm_sale_2017$goods_year <- as.integer(wsm_sale_2017$goods_year)
 wsm_sale_2017$sale_quarter <- quarter(wsm_sale_2017$sale_date)
 wsm_sale_2017$sale_num <- as.integer(wsm_sale_2017$sale_num)
 wsm_sale_2017$sale_amount <- as.numeric(wsm_sale_2017$sale_amount)
 wsm_sale_2017$origin_amount <- as.numeric(wsm_sale_2017$origin_amount)
-
-# View(head(wsm_sale_2017, 100))
-View(tail(wsm_sale_2017, 100))
-# str(wsm_sale_2017)
+### 缺失值和异常值
+md.pattern(wsm_sale_2017[, 15:19])
+summary(wsm_sale_2017[, 15:19])
 
 ## 商品信息
-wsm_goods_info <- read.table(file = "./wsm_goods_info.txt", 
+wsm_goods_info <- read.table(file = "E:/dianjia/project_data/wsm/wsm_goods_info.csv", 
                              header = TRUE, 
-                             sep = '\t', 
-                             fileEncoding = 'utf-16',
+                             sep = ',', 
                              stringsAsFactors = FALSE)
 wsm_goods_info$shangshi_date <- as.Date(wsm_goods_info$shangshi_date)
-# str(wsm_goods_info)
+str(wsm_goods_info)
 View(head(wsm_goods_info, 100))
 
 ## left_join，从商品信息表中获取goods_material,up_down,shangshi_date字段
@@ -48,11 +53,43 @@ wsm_sale_2017 %>%
 
 # 数据汇总 ============================================================
 
+## 销售-
+wsm_sale_sum <- wsm_sale_2017 %>% 
+  filter(!region_name %in% c('电商', '一期特卖')) %>% 
+  group_by(sale_year, sale_quarter, sale_month, up_down, cat1_name, goods_material, 
+           goods_year, goods_season, goods_boduan1, is_guoji, discount_level) %>% 
+  summarise(sale_num = sum(sale_num, na.rm = TRUE), 
+            sale_amount = sum(sale_amount, na.rm = TRUE), 
+            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
+  arrange(sale_year, sale_quarter, sale_month)
+
+write.csv(wsm_sale_sum, 
+          file = 'E:/dianjia/project_data/wsm/wsm_sale_sum.csv', 
+          row.names = FALSE)
+
+str(wsm_sale_sum)
+View(head(wsm_sale_sum))
+
+wsm_sale_2017 %>% 
+  filter(!region_name %in% c('电商', '一期特卖')) %>% 
+  head(100) %>% 
+  View()
+
+wsm_sale_2017 %>% 
+  group_by(region_name) %>% 
+  summarise(sale_num = sum(sale_num, na.rm = TRUE), 
+            sale_amount = sum(sale_amount, na.rm = TRUE), 
+            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
+  View()
+
+
+
+
+
 ## 上市节奏
 ## 2017年上市482个款，还有部分款没有上市日期，主要是外采特卖款，实际上市款数多于此数目
 wsm_shangshi_2017 <- wsm_goods_info %>% 
-  filter(shangshi_date >= '2017-01-01', 
-         shangshi_date <= '2017-12-31') %>% 
+  filter(shangshi_date <= '2017-12-31') %>% 
   group_by(shangshi_month, cat1_name, goods_material, goods_season, goods_boduan) %>% 
   summarise(goods_count = n()) %>% 
   arrange(shangshi_month)
@@ -61,72 +98,14 @@ write.csv(wsm_shangshi_2017,
           file = './wsm_shangshi_2017', 
           row.names = FALSE)
 
-## 销售明细-到类目
-wsm_sale_cat %>% 
-  group_by(sale_month) %>% 
-  summarise(sale_num = sum(sale_num, na.rm = TRUE), 
-            sale_amount = round(sum(sale_amount, na.rm = TRUE)/10000, 2), 
-            origin_amount = round(sum(origin_amount, na.rm = TRUE)/10000, 2)) %>% 
-  View()
 
 
 
-sale_year <- sale_2013_2017 %>% 
-  group_by(sale_year) %>% 
-  summarise(goods_num = sum(goods_num, na.rm = TRUE), 
-            sale_amount = round(sum(sale_amount, na.rm = TRUE)/10000, 2), 
-            origin_amount = round(sum(origin_amount, na.rm = TRUE)/10000, 2), 
-            settel_amount = round(sum(settel_amount, na.rm = TRUE)/10000, 2)) %>% 
-  mutate(origin_price = round(origin_amount/goods_num*10000,2), 
-         sale_price = round(sale_amount/goods_num*10000, 2),
-         discount_rate = round(sale_amount/origin_amount, 2))
 
 
-sale_201317 %>% 
-  head(100) %>% 
-  View()
 
 
-sale_201317$cat2_id <- NULL
 
-sale_201317 %>% 
-  group_by(cat1_name, cat2_name) %>% 
-  summarise(count_n = n()) %>% 
-  View()
-
-sale_201317 %>% 
-  filter(cat2_name == '未定义') %>% 
-  group_by(cat1_name, cat2_name) %>% 
-  summarise(count_n = n()) %>% 
-  View()
-
-
-cat_level <- read.table(file = './data/xmoom_cat_level.txt', 
-                        header = TRUE, 
-                        sep = ';', 
-                        stringsAsFactors = FALSE, 
-                        fileEncoding = 'utf-16')
-
-View(cat_level)
-str(cat_level)
-
-cat_level %>% 
-  group_by(cat_level1_id) %>% 
-  summarise(count_n = n()) %>% 
-  filter(count_n == 1) %>% 
-  View()
-
-cat_level %>% 
-  filter(cat_level1_id %in% c('B', 'G','H', 'J', 'P', 'TZ', 'Z'))
-
-
-## 把数据写出 =================================================
-write.csv(sale_201317, 
-          file = 'sale_2013_2017.csv', 
-          row.names = FALSE)
-
-
-View(head(sale_2013_2017, 100))
 
 
 # 打印程序执行时间
