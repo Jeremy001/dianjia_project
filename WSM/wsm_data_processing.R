@@ -113,6 +113,26 @@ wsm_shangshi_2017 <- wsm_goods_info %>%
 
 
 
+
+wsm_sale_2017_month_q34 %>% 
+  hchart(type = 'scatter', 
+         hcaes(x = sale_month, 
+               y = sale_amount, 
+               z = sale_num, 
+               group = is_guoji)) %>% 
+  hc_legend(enabled = TRUE) %>% 
+  hc_add_theme(hc_theme_flat())
+
+
+wsm_sale_2017_cat1_q34 %>% 
+  hchart(type = 'scatter', 
+         hcaes(x = sale_num, 
+               y = sale_amount, 
+               z = discount, 
+               group = cat1_name)) %>% 
+  hc_legend(enabled = TRUE) %>% 
+  hc_add_theme(hc_theme_flat())
+
 wsm_goods_info %>% 
   filter(shangshi_date >= '2017-01-01', 
          shangshi_date <= '2017-12-31', 
