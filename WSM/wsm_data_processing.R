@@ -15,20 +15,21 @@ wsm_sale_2017 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_sale_2017.cs
                             stringsAsFactors = FALSE)
 
 ### 查看数据
-View(head(wsm_sale_2017, 100))
-View(tail(wsm_sale_2017, 100))
-str(wsm_sale_2017)
+# View(head(wsm_sale_2017, 100))
+# View(tail(wsm_sale_2017, 100))
+# str(wsm_sale_2017)
 ### 数据格式
 wsm_sale_2017$sale_date <- as.Date(wsm_sale_2017$sale_date)
 wsm_sale_2017$sale_year <- year(wsm_sale_2017$sale_date)
 wsm_sale_2017$goods_year <- as.integer(wsm_sale_2017$goods_year)
 wsm_sale_2017$sale_quarter <- quarter(wsm_sale_2017$sale_date)
+wsm_sale_2017$sale_month <- month(wsm_sale_2017$sale_date, label = TRUE)
 wsm_sale_2017$sale_num <- as.integer(wsm_sale_2017$sale_num)
 wsm_sale_2017$sale_amount <- as.numeric(wsm_sale_2017$sale_amount)
 wsm_sale_2017$origin_amount <- as.numeric(wsm_sale_2017$origin_amount)
 ### 缺失值和异常值
-md.pattern(wsm_sale_2017[, 15:19])
-summary(wsm_sale_2017[, 15:19])
+# md.pattern(wsm_sale_2017[, 15:19])
+# summary(wsm_sale_2017[, 15:19])
 
 ## 商品信息
 wsm_goods_info <- read.table(file = "E:/dianjia/project_data/wsm/wsm_goods_info.csv", 
@@ -36,22 +37,56 @@ wsm_goods_info <- read.table(file = "E:/dianjia/project_data/wsm/wsm_goods_info.
                              sep = ',', 
                              stringsAsFactors = FALSE)
 wsm_goods_info$shangshi_date <- as.Date(wsm_goods_info$shangshi_date)
-str(wsm_goods_info)
-View(head(wsm_goods_info, 100))
+### 查看数据
+# str(wsm_goods_info)
+# View(head(wsm_goods_info, 100))
 
 ## left_join，从商品信息表中获取goods_material,up_down,shangshi_date字段
-wsm_sale_2017 <- left_join(x = wsm_sale_2017, 
-                           y = wsm_goods_info[, c('goods_id', 'goods_material', 'up_down', 'shangshi_date')], 
-                           by = c('goods_id' = 'goods_id'))
-wsm_sale_2017 <- wsm_sale_2017 %>% 
+wsm_goods_sale_2017 <- left_join(x = wsm_sale_2017, 
+                                 y = wsm_goods_info[, c('goods_id', 'goods_material', 'up_down', 'shangshi_date')],
+                                 by = c('goods_id' = 'goods_id'))
+wsm_goods_sale_2017 <- wsm_goods_sale_2017 %>% 
   filter(sale_date <= '2017-12-31')
 
-wsm_sale_2017 %>%
-  head(100) %>%
-  View()
+## 2018Q3订货数据
+wsm_orders_2018q3 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_orders_2018q3.csv", 
+                                header = TRUE, 
+                                sep = ',', 
+                                stringsAsFactors = FALSE)
+View(head(wsm_orders_2018q3, 100))
 
 
 # 数据汇总 ============================================================
+
+## 7-12月：各季节销售占比(数量、金额)
+wsm_goods_sale_2017 %>% 
+  filter(sale_month >= '7月', 
+         sale_date <= '2017-12-31') %>% 
+  group_by(sale_month, goods_season) %>% 
+  summarise(sale_num = sum(sale_num, na.rm = TRUE), 
+            sale_amount = sum(sale_amount, na.rm = TRUE), 
+            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
+  hchart('column', 
+         hcaes(x = sale_month, 
+               y = sale_num, 
+               group = goods_season)) %>% 
+  hc_plotOptions(column = list(stacking = 'fill')) %>% 
+  hc_add_theme(hc_theme_darkunica())
+
+wsm_goods_sale_2017 %>% 
+  filter(sale_month >= '7月', 
+         sale_date <= '2017-12-31') %>% 
+  group_by(sale_month, goods_season) %>% 
+  summarise(sale_num = sum(sale_num, na.rm = TRUE), 
+            sale_amount = sum(sale_amount, na.rm = TRUE), 
+            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
+  hchart('column', 
+         hcaes(x = sale_month, 
+               y = sale_amount, 
+               group = goods_season)) %>% 
+  hc_plotOptions(column = list(stacking = 'fill')) %>% 
+  hc_add_theme(hc_theme_darkunica())
+
 
 ## 销售-
 wsm_sale_sum <- wsm_sale_2017 %>% 
@@ -67,24 +102,6 @@ write.csv(wsm_sale_sum,
           file = 'E:/dianjia/project_data/wsm/wsm_sale_sum.csv', 
           row.names = FALSE)
 
-str(wsm_sale_sum)
-View(head(wsm_sale_sum))
-
-wsm_sale_2017 %>% 
-  filter(!region_name %in% c('电商', '一期特卖')) %>% 
-  head(100) %>% 
-  View()
-
-wsm_sale_2017 %>% 
-  group_by(region_name) %>% 
-  summarise(sale_num = sum(sale_num, na.rm = TRUE), 
-            sale_amount = sum(sale_amount, na.rm = TRUE), 
-            origin_amount = sum(origin_amount, na.rm = TRUE)) %>% 
-  View()
-
-
-
-
 
 ## 上市节奏
 ## 2017年上市482个款，还有部分款没有上市日期，主要是外采特卖款，实际上市款数多于此数目
@@ -94,12 +111,29 @@ wsm_shangshi_2017 <- wsm_goods_info %>%
   summarise(goods_count = n()) %>% 
   arrange(shangshi_month)
 
+
+
+wsm_goods_info %>% 
+  filter(shangshi_date >= '2017-01-01', 
+         shangshi_date <= '2017-12-31', 
+         goods_season == '3-秋季') %>% 
+  group_by(shangshi_date, cat1_name) %>% 
+  summarise(goods_count = n()) %>% 
+  hchart(type = 'column', 
+         hcaes(x = shangshi_date, 
+               y = goods_count, 
+               group = cat1_name)) %>% 
+  hc_plotOptions(column = list(stacking = 'fill')) %>% 
+  hc_add_theme(hc_theme_flat())
+
+
+
+
+
+
 write.csv(wsm_shangshi_2017, 
           file = './wsm_shangshi_2017', 
           row.names = FALSE)
-
-
-
 
 
 
