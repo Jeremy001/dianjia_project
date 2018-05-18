@@ -181,7 +181,7 @@ ui <- dashboardPage(
             tabPanel(
               '应季VS过季', 
               fluidRow(
-                box(DTOutput('wsm_sale_2017_cat1_yingguo'), width = 12)
+                box(DTOutput('sale_2017_q34_qiu_cat1_yingguo'), width = 12)
               )
             )
           )
@@ -191,7 +191,7 @@ ui <- dashboardPage(
             title = '应季过季和类目结构', 
             id = 'tabset2', 
             width = 12,
-            height = '1000px', 
+            height = '1100px', 
             tabPanel(
               '销售数量',
               fluidRow(
@@ -265,7 +265,16 @@ ui <- dashboardPage(
       tabItem(
         tabName = 'tab04',
         fluidRow(
-          box()
+          valueBoxOutput('order_2018_qiu_goods_count', width = 2), 
+          valueBoxOutput('order_2018_qiu_goods_num', width = 2), 
+          valueBoxOutput('order_2018_qiu_sale_amount', width = 2),  # 假定7折
+          valueBoxOutput('order_2018_qiu_origin_amount', width = 2), 
+          valueBoxOutput('order_2018_qiu_avg_sale_price', width = 2), 
+          valueBoxOutput('order_2018_qiu_avg_origin_price', width = 2)
+        ),
+        fluidRow(
+          box(DTOutput('order_2018_qiu_table'), 
+              width = 12)
         )
       )
     )
@@ -309,17 +318,6 @@ wsm_orders_2018q3 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_orders_2
                                 sep = ',', 
                                 stringsAsFactors = FALSE)
 wsm_orders_2018q3[is.na(wsm_orders_2018q3)] <- 0
-wsm_orders_2018q3 %>% 
-  group_by(波段) %>% 
-  summarise(gn = n())
-
-
-
-
-
-
-View(head(wsm_orders_2018q3, 30))
-
 
 
 # 数据汇总 ============================================================
@@ -467,7 +465,7 @@ wsm_sale_2017_month_q34_cat <- wsm_goods_sale_2017 %>%
          discount = round(sale_amount/origin_amount, 2))
 
 ### Q3-Q4类目-整体
-wsm_sale_2017_cat1_q34 <- wsm_goods_sale_2017 %>% 
+sale_2017_q34_qiu_cat1 <- wsm_goods_sale_2017 %>% 
   filter(sale_date >= '2017-07-01',
          sale_date <= '2017-12-31', 
          !region_name %in% c('电商', '一期特卖'), 
@@ -487,7 +485,7 @@ wsm_sale_2017_cat1_q34 <- wsm_goods_sale_2017 %>%
   arrange(-sale_amount)
 
 ### Q3-Q4类目-应季
-wsm_sale_2017_cat1_q34_yingji <- wsm_goods_sale_2017 %>% 
+sale_2017_q34_qiu_cat1_yingji <- wsm_goods_sale_2017 %>% 
   filter(sale_date >= '2017-07-01', 
          sale_date <= '2017-12-31', 
          !region_name %in% c('电商', '一期特卖'), 
@@ -507,7 +505,7 @@ wsm_sale_2017_cat1_q34_yingji <- wsm_goods_sale_2017 %>%
          origin_amount_prop, avg_sale_price, avg_origin_price, discount) %>% 
   arrange(-sale_amount)
 ### Q3-Q4类目-过季
-wsm_sale_2017_cat1_q34_guoji <- wsm_goods_sale_2017 %>% 
+sale_2017_q34_qiu_cat1_guoji <- wsm_goods_sale_2017 %>% 
   filter(sale_date >= '2017-07-01', 
          sale_date <= '2017-12-31', 
          !region_name %in% c('电商', '一期特卖'), 
@@ -527,14 +525,14 @@ wsm_sale_2017_cat1_q34_guoji <- wsm_goods_sale_2017 %>%
          origin_amount_prop, avg_sale_price, avg_origin_price, discount) %>% 
   arrange(-sale_amount)
 ### Q3-Q4:秋装整体、应季占比、过季占比
-wsm_sale_2017_cat1_yingguo <- 
-  left_join(wsm_sale_2017_cat1_q34[, c('cat1_name', 'sale_num', 'sale_amount', 'origin_amount')], 
-          wsm_sale_2017_cat1_q34_yingji[, c('cat1_name', 'sale_num', 'sale_amount', 'origin_amount')], 
+sale_2017_q34_qiu_cat1_yingguo <- 
+  left_join(sale_2017_q34_qiu_cat1[, c('cat1_name', 'sale_num', 'sale_amount', 'origin_amount')], 
+          sale_2017_q34_qiu_cat1_yingji[, c('cat1_name', 'sale_num', 'sale_amount', 'origin_amount')], 
           by = c('cat1_name' = 'cat1_name')) %>% 
-  left_join(wsm_sale_2017_cat1_q34_guoji[, c('cat1_name', 'sale_num', 'sale_amount', 'origin_amount')], 
+  left_join(sale_2017_q34_qiu_cat1_guoji[, c('cat1_name', 'sale_num', 'sale_amount', 'origin_amount')], 
             by = c('cat1_name' = 'cat1_name'))
-wsm_sale_2017_cat1_yingguo[is.na(wsm_sale_2017_cat1_yingguo)] <- 0
-wsm_sale_2017_cat1_yingguo <- wsm_sale_2017_cat1_yingguo %>% 
+sale_2017_q34_qiu_cat1_yingguo[is.na(sale_2017_q34_qiu_cat1_yingguo)] <- 0
+sale_2017_q34_qiu_cat1_yingguo <- sale_2017_q34_qiu_cat1_yingguo %>% 
   mutate(sale_num_prop = paste(round(sale_num.y*100/sale_num.x, 1), '%', sep = ''), 
          sale_amount_prop = paste(round(sale_amount.y*100/sale_amount.x, 1), '%', sep = ''), 
          origin_amount_prop = paste(round(origin_amount.y*100/origin_amount.x, 1), '%', sep = '')) %>% 
@@ -542,13 +540,13 @@ wsm_sale_2017_cat1_yingguo <- wsm_sale_2017_cat1_yingguo %>%
          sale_amount.x, sale_amount.y, sale_amount_prop, sale_amount, 
          origin_amount.x, origin_amount.y, origin_amount_prop, origin_amount)
   
-colnames(wsm_sale_2017_cat1_q34) <- c('类目', '销售数量', '数量占比', '销售金额', '金额占比', 
+colnames(sale_2017_q34_qiu_cat1) <- c('类目', '销售数量', '数量占比', '销售金额', '金额占比', 
                                       '吊牌金额', '吊牌占比', '平均售价', '平均吊牌价', '折扣')
-colnames(wsm_sale_2017_cat1_q34_yingji) <- c('类目', '销售数量', '数量占比', '销售金额', '金额占比', 
+colnames(sale_2017_q34_qiu_cat1_yingji) <- c('类目', '销售数量', '数量占比', '销售金额', '金额占比', 
                                              '吊牌金额', '吊牌占比', '平均售价', '平均吊牌价', '折扣')
-colnames(wsm_sale_2017_cat1_q34_guoji) <- c('类目', '销售数量', '数量占比', '销售金额', '金额占比', 
+colnames(sale_2017_q34_qiu_cat1_guoji) <- c('类目', '销售数量', '数量占比', '销售金额', '金额占比', 
                                             '吊牌金额', '吊牌占比', '平均售价', '平均吊牌价', '折扣')
-colnames(wsm_sale_2017_cat1_yingguo) <- c('类目', '销售数量', '应季数量', '应季数量占比', '过季数量', 
+colnames(sale_2017_q34_qiu_cat1_yingguo) <- c('类目', '销售数量', '应季数量', '应季数量占比', '过季数量', 
                                           '销售金额', '应季金额', '应季金额占比', '过季金额', 
                                           '吊牌金额', '应季吊牌', '应季吊牌占比', '过季吊牌')
 
@@ -563,6 +561,57 @@ qiu_cat1_date <- wsm_goods_sale_2017 %>%
             origin_amount = round(sum(origin_amount, na.rm = TRUE)/10000, 1))
 
 
+## 2018秋季订货数据 ===================================
+### 类目对比：2017年上市、销售、2018年下单
+#### 2018下单数据
+order_2018_qiu_cat1 <- wsm_orders_2018q3 %>% 
+  group_by(品类, 商品款号) %>% 
+  summarise(goods_num = sum(合计), 
+            origin_amount = sum(吊牌额)) %>% 
+  group_by(品类) %>% 
+  summarise(goods_count = n(), 
+            goods_num = sum(goods_num), 
+            origin_amount = round(sum(origin_amount)/10000, 1)) %>% 
+  mutate(sale_amount = round(origin_amount*0.7, 1), 
+         avg_sale_price = round(sale_amount*10000/goods_num, 1), 
+         avg_origin_price = round(origin_amount*10000/goods_num, 1)) %>% 
+  arrange(-goods_num)
+#### 2017_qius上市款数
+shangshi_2017_qiu_cat1 <- wsm_goods_info %>% 
+  filter(shangshi_date >= '2017-01-01', 
+         shangshi_date <= '2017-12-31', 
+         goods_season == '3-秋季', 
+         goods_year == 2017) %>% 
+  group_by(cat1_name) %>% 
+  summarise(shangshi_goods = n(), 
+            avg_origin_price = round(mean(origin_price), 1)) %>% 
+  arrange(-shangshi_goods)
+#### join以上三个表，得到总表
+sale_order_qiu_cat1 <- shangshi_2017_qiu_cat1[, 1:2] %>% 
+  full_join(sale_2017_q34_qiu_cat1_yingji[, c(1:2, 4, 6)], 
+            by = c('cat1_name' = '类目')) %>% 
+  full_join(order_2018_qiu_cat1[, c(1:3, 5, 4)], 
+            by = c('cat1_name' = '品类'))
+sale_order_qiu_cat1[is.na(sale_order_qiu_cat1)] <- 0
+sale_order_qiu_cat1_sum <- sapply(sale_order_qiu_cat1[, -1], 
+                                  function(x) sum(x))
+sale_order_qiu_cat1_sum <- as.data.frame(t(sale_order_qiu_cat1_sum))
+sale_order_qiu_cat1_sum$cat1_name <- '合计'
+sale_order_qiu_cat1_sum <- sale_order_qiu_cat1_sum[, c(9, 1:8)]
+sale_order_qiu_cat1 <- rbind(sale_order_qiu_cat1, sale_order_qiu_cat1_sum)
+sale_order_qiu_cat1 <- sale_order_qiu_cat1 %>% 
+  mutate(goods_num_duibi = round(goods_num*100/销售数量, 1), 
+         sale_amount_duibi = round(sale_amount*100/销售金额, 1), 
+         origin_amount_duibi = round(origin_amount*100/吊牌金额, 1), 
+         avg_sale_price_2017 = round(销售金额*10000/销售数量, 1), 
+         avg_sale_price_2018 = round(sale_amount*10000/goods_num, 1), 
+         avg_origin_price_2017 = round(吊牌金额*10000/销售数量, 1), 
+         avg_origin_price_2018 = round(origin_amount*10000/goods_num, 1), 
+         origin_price_duibi = round(avg_origin_price_2018*100/avg_origin_price_2017, 1))
+sale_order_qiu_cat1 <- sale_order_qiu_cat1[, c(1:2, 6, 3, 7, 10, 4, 8, 11, 5, 9, 12, 13:17)]
+names(sale_order_qiu_cat1) <- c('类目','17款数','18款数','17数量','18数量','数量同比%','17金额','18金额',
+                                '金额同比%','17吊牌','18吊牌','吊牌同比%','17售价','18售价','17吊牌价', 
+                                '18吊牌价','吊牌价同比%')
 
 # server.r ===================================================================================
 
@@ -978,7 +1027,7 @@ server <- function(input, output){
   })
   ### wsm_2017_qiu_q34_table
   output$wsm_2017_qiu_q34_table <- renderDT(
-    wsm_sale_2017_cat1_q34, 
+    sale_2017_q34_qiu_cat1, 
     rownames = FALSE, 
     options = list(
       dom = 't', 
@@ -987,7 +1036,7 @@ server <- function(input, output){
   )
   ### wsm_2017_qiu_q34_yingji_table
   output$wsm_2017_qiu_q34_yingji_table <- renderDT(
-    wsm_sale_2017_cat1_q34_yingji, 
+    sale_2017_q34_qiu_cat1_yingji, 
     rownames = FALSE, 
     options = list(
       dom = 't', 
@@ -996,16 +1045,16 @@ server <- function(input, output){
   )
   ### wsm_2017_qiu_q34_guoji_table
   output$wsm_2017_qiu_q34_guoji_table <- renderDT(
-    wsm_sale_2017_cat1_q34_guoji, 
+    sale_2017_q34_qiu_cat1_guoji, 
     rownames = FALSE, 
     options = list(
       dom = 't', 
       columnDefs = list(list(className = 'dt-center', targets = 1:9))
     )
   )
-  ### wsm_sale_2017_cat1_yingguo
-  output$wsm_sale_2017_cat1_yingguo <- renderDT(
-    wsm_sale_2017_cat1_yingguo, 
+  ### sale_2017_q34_qiu_cat1_yingguo
+  output$sale_2017_q34_qiu_cat1_yingguo <- renderDT(
+    sale_2017_q34_qiu_cat1_yingguo, 
     rownames = FALSE, 
     options = list(
       dom = 't', 
@@ -1132,9 +1181,80 @@ server <- function(input, output){
                 layout = 'vertical')
   })
   
+  ## tab04 =======================================
   
+  output$order_2018_qiu_goods_count <- renderValueBox({
+    valueBox(
+      value = sum(order_2018_qiu_cat1$goods_count), 
+      '款数', 
+      icon = icon('credit-card')
+    )
+  })
+  output$order_2018_qiu_goods_num <- renderValueBox({
+    valueBox(
+      value = sum(order_2018_qiu_cat1$goods_num),
+      '件数', 
+      icon = icon('credit-card'), 
+      color = 'purple'
+    )
+  })
+  output$order_2018_qiu_sale_amount <- renderValueBox({
+    valueBox(
+      value = sum(order_2018_qiu_cat1$sale_amount), 
+      '销售金额', 
+      icon = icon('credit-card')
+    )
+  })
+  output$order_2018_qiu_origin_amount <- renderValueBox({
+    valueBox(
+      value = sum(order_2018_qiu_cat1$origin_amount), 
+      '吊牌金额', 
+      icon = icon('credit-card')
+    )
+  })
+  output$order_2018_qiu_avg_sale_price <- renderValueBox({
+    valueBox(
+      value = round(sum(order_2018_qiu_cat1$sale_amount)*10000/sum(order_2018_qiu_cat1$goods_num), 1), 
+      '平均售价', 
+      icon = icon('credit-card'), 
+      color = 'purple'
+    )
+  })
+  output$order_2018_qiu_avg_origin_price <- renderValueBox({
+    valueBox(
+      value = round(sum(order_2018_qiu_cat1$origin_amount)*10000/sum(order_2018_qiu_cat1$goods_num), 1), 
+      '平均吊牌价', 
+      icon = icon('credit-card')
+    )
+  })
+  output$order_2018_qiu_table <- DT::renderDT({
+    datatable(sale_order_qiu_cat1, 
+              rownames = FALSE, 
+              extensions = 'Buttons', 
+              options = list(
+                dom = 't', 
+                buttons = c('excel', 'csv', 'copy'), 
+                pageLength = 20, 
+                columnDefs = list(list(className = 'dt-center', targets = 1:16), 
+                                  list(width = '40px', targets = 1)))) %>%
+      formatStyle('数量同比%',
+                  backgroundColor = styleInterval(100, c('orange', 'lightgreen'))) %>% 
+      formatStyle('金额同比%',
+                  backgroundColor = styleInterval(100, c('orange', 'lightgreen'))) %>% 
+      formatStyle('吊牌同比%',
+                  backgroundColor = styleInterval(100, c('orange', 'lightgreen'))) %>% 
+      formatStyle('吊牌价同比%',
+                  backgroundColor = styleInterval(100, c('orange', 'lightgreen')))
+  })
   
 }
+
+
+
+
+
+
+
 
 
 # app ========================================================================================
