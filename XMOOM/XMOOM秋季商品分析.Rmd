@@ -1,0 +1,139 @@
+---
+title: "XMOOM-2017年秋季商品销售趋势"
+author: "云杉"
+date: "2018/5/2"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE)
+```
+
+```{r}
+# 加载包
+library(tidyverse)
+library(recharts)
+library(lubridate)
+library(plotly)
+library(ggthemes)
+library(crosstalk)
+library(DT)
+```
+
+```{r}
+# 导入数据
+sale_2013_2017 <- read.csv(file = "sale_2013_2017.csv",
+                           stringsAsFactors = FALSE,
+                           header = TRUE)
+```
+
+
+### 2013-2017每月销售趋势
+
+下半年销售好于上半年，2017年表现尤其如此，比例约为4:6；
+
+```{r}
+### 年+月
+sale_year_month <- sale_2013_2017 %>% 
+  group_by(sale_year, sale_month) %>% 
+  summarise(goods_num = sum(goods_num, na.rm = TRUE), 
+            sale_amount = round(sum(sale_amount, na.rm = TRUE)/10000, 2), 
+            origin_amount = round(sum(origin_amount, na.rm = TRUE)/10000, 2), 
+            settel_amount = round(sum(settel_amount, na.rm = TRUE)/10000, 2)) %>% 
+  mutate(origin_price = round(origin_amount/goods_num*10000,2), 
+         sale_price = round(sale_amount/goods_num*10000, 2),
+         discount_rate = round(sale_amount/origin_amount, 2))
+### 联动图，2013-2017年总销售额和各月销售额
+sd_sale_year_month <- SharedData$new(sale_year_month, 
+                                     ~sale_year, 
+                                     'Select a year')
+base_plot <- plot_ly(sd_sale_year_month, 
+                     color = I('lightblue'), 
+                     height = 500, 
+                     width = 1000) %>% 
+  group_by(sale_year)
+#### 总图，年汇总对比,bar-chart
+p1 <- base_plot %>% 
+  summarise(goods_num = sum(goods_num)) %>% 
+  arrange(sale_year) %>% 
+  add_bars(x = ~goods_num, 
+           y = ~factor(sale_year, levels = sale_year), 
+           hoverinfo = 'x + y') %>% 
+  layout(barmode = 'overlay', 
+         xaxis = list(title = 'goods_num'), 
+         yaxis = list(title = ''))
+#### 分图，月趋势，line-chart
+p2 <- base_plot %>% 
+  add_lines(x = ~sale_month, 
+            y = ~goods_num) %>% 
+  layout(xaxis = list(title = ''))
+#### 组合主图和分图，联动
+subplot(p1, p2, titleX = TRUE, widths = c(0.3, 0.7)) %>% 
+  layout(margin = list(l = 100)) %>% 
+  hide_legend() %>% 
+  highlight(dynamic = TRUE, selectize = TRUE)
+```
+
+
+### 2017年秋季各类目商品销售趋势
+
+2017年秋季，各类目销售趋势分为三大类：
+
+1. 正常型：8月陆续进入销售期，9月爆发，10月衰退；
+
+2. 早秋型：7月就开始进入销售期，8-9月份爆发，9-10月份衰退，如连衣裙；
+
+3. 晚秋型：8-9月进入销售期，9-10月份爆发，11月衰退，如风衣；
+
+
+```{r}
+sale_2017_q3 <- sale_2013_2017 %>% 
+  filter(sale_year == 2017, 
+         sale_month >= 7, 
+         goods_season == '3-秋') %>% 
+  mutate(sale_date = as.Date(sale_date)) %>% 
+  group_by(sale_year, sale_month, sale_date, cat1_name) %>% 
+  summarise(goods_num = sum(goods_num, na.rm = TRUE), 
+            sale_amount = round(sum(sale_amount, na.rm = TRUE)/10000, 2), 
+            origin_amount = round(sum(origin_amount, na.rm = TRUE)/10000, 2), 
+            settel_amount = round(sum(settel_amount, na.rm = TRUE)/10000, 2))
+### 联动图，2017年秋季各类目销售总件数和销售趋势(日)
+sd_sale_2017_q3 <- SharedData$new(sale_2017_q3, 
+                                     ~cat1_name, 
+                                     '请选择一级类目：')
+base_plot <- plot_ly(sd_sale_2017_q3, 
+                     color = I('black'), 
+                     height = 500, 
+                     width = 1000) %>% 
+  filter(cat1_name != 'A针织衫') %>% 
+  group_by(cat1_name)
+#### 总图，年汇总对比,bar-chart
+p1 <- base_plot %>% 
+  summarise(goods_num = sum(goods_num)) %>% 
+  arrange(goods_num) %>% 
+  add_bars(x = ~goods_num, 
+           y = ~factor(cat1_name, levels = cat1_name), 
+           hoverinfo = 'x + y') %>% 
+  layout(barmode = 'overlay', 
+         xaxis = list(title = 'goods_num'), 
+         yaxis = list(title = ''))
+#### 分图，月趋势，line-chart
+p2 <- base_plot %>% 
+  add_lines(x = ~sale_date, 
+            y = ~goods_num, 
+            alpha = 0.5) %>% 
+  layout(xaxis = list(title = ''))
+#### 组合主图和分图，联动
+subplot(p1, p2, titleX = TRUE, widths = c(0.3, 0.7)) %>% 
+  layout(margin = list(l = 100)) %>% 
+  hide_legend() %>% 
+  highlight(dynamic = TRUE, selectize = TRUE)
+```
+
+
+**备注：剔除了针织衫类目；**
+
+
+

@@ -1,35 +1,332 @@
 /*
-ÂÜÖÂÆπÔºödianjia database
-Êó•ÊúüÔºö2018-03-28
-‰ΩúËÄÖÔºö‰∫ëÊùâ
+ƒ⁄»›£∫dianjia database
+»’∆⁄£∫2018-03-28
+◊˜’ﬂ£∫‘∆…º
 
-Â∏∏ËØÜÔºö
-Êï∞ÊçÆÁîü‰∫ßÊµÅÁ®ã:
-Êï∞ÊçÆÊäΩÂèñextract:e_ods
-Êï∞ÊçÆÊ∏ÖÊ¥ótransform:‰∏öÂä°Ë°®dwd_ Â±ûÊÄßË°®dim_
-Êï∞ÊçÆÂä†Â∑•transform:dw_
-Êï∞ÊçÆÈõÜÂ∏Çtransform:dm_
+≥£ ∂£∫
+ ˝æ›…˙≤˙¡˜≥Ã:
+ ˝æ›≥È»°extract:e_ods
+ ˝æ›«Âœ¥transform:“µŒÒ±Ìdwd_  Ù–‘±Ìdim_
+ ˝æ›º”π§transform:dw_
+ ˝æ›ºØ –transform:dm_
 
-Êï∞ÊçÆË°®ÈÉΩÊúâÂàÜÂå∫ÔºåÂàÜÂå∫Â≠óÊÆµp_day,string,Á§∫‰æãÔºö20180327ÔºåÊü•ËØ¢Êó∂Â∏¶‰∏äÂàÜÂå∫
+ ˝æ›±Ì∂º”–∑÷«¯£¨∑÷«¯◊÷∂Œp_day,string, æ¿˝£∫20180327£¨≤È—Ø ±¥¯…œ∑÷«¯
 */
- 
 
--- ÂìÅÁâåÁª¥Â∫¶Ë°®ÔºåÂåÖÂê´Áà∂Â≠êÂìÅÁâå
+
+-- √ﬁπ∫ 10094
+SELECT *
+FROM dim_brand_info_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.brand_id = '10094'
+;
+
+
+SELECT t1.*
+FROM dianjia_bdc.ods_brand_storage_kpi_target_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.brand_id = '10094'
+  AND t1.target_type = 0	-- 0-‘¬ƒø±Í£ª1-»’ƒø±Í
+LIMIT 10;
+
+
+
+
+SELECT t1.*
+FROM dianjia_bdc.ods_brand_storage_kpi_target_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.brand_id = '10094'
+  AND t1.target_type = 0
+  AND t1.storage_id = '220241367157178368'
+ORDER BY target_time
+LIMIT 50
+;
+
+
+-- ∂‡…Ÿ∏ˆ√≈µÍµƒ8‘¬ƒø±Í∏¸–¬¡À£ø
+-- ∑¢œ÷∏¸–¬¡Àƒø±Íµƒ∆∑≈∆∑«≥£…Ÿ£¨÷ª”–5º“”√µΩ¡À»®÷ÿ÷∏±Í∑÷Ω‚‘¬ƒø±Í£ª
+SELECT (CASE WHEN t1.last_modify_time >= '2018-08-15' THEN '1' ELSE 0 END) AS is_online_update
+		,COUNT(DISTINCT t1.brand_id) AS brand_count
+		,COUNT(DISTINCT t1.storage_id) AS storage_count
+FROM dianjia_bdc.ods_brand_storage_kpi_target_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.target_type = 0
+  AND t1.target_time = '2018-08'
+  AND t1.brand_id NOT IN ('1', '10010', '10127')
+GROUP BY (CASE WHEN t1.last_modify_time >= '2018-08-15' THEN '1' ELSE 0 END)
+;
+
+-- ”–∂‡…Ÿ∆∑≈∆∫Õ√≈µÍ”√¡ÀŒ“√«µƒ√≈µÍ“µº®π‹¿Ìπ¶ƒ‹£ø
+-- »Áπ˚…Ë÷√¡Àƒø±Í£¨»œŒ™ π”√¡À∏√π¶ƒ‹£ª
+WITH
+t1 AS 
+(SELECT t1.brand_id
+	   ,t1.storage_id
+	   ,t1.storage_name
+FROM dianjia_bdc.dim_storage_info_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.storage_type = 1	-- 1-œﬂœ¬√≈µÍ£¨2-œﬂœ¬≤÷ø‚£¨3-œﬂ…œ≤÷ø‚£¨4-œﬂ…œ√≈µÍ
+  AND t1.storage_status = 1		-- 1-“—∆Ù”√£¨4-Õ£”√£¨9-“—πÿ±’
+  AND t1.brand_id = '10091'
+  --AND t1.brand_id NOT IN ('1', '10010', '10127')
+),
+t2 AS 
+(SELECT t2.storage_id
+	   ,t2.target_time
+	   ,t2.target_kpi_value
+	   ,t2.last_modify_time
+FROM dianjia_bdc.ods_brand_storage_kpi_target_dt AS t2
+WHERE t2.p_day = '20180819'
+  AND t2.target_type = 0
+  AND t2.target_time = '2018-08'
+  AND t2.brand_id = '10091'
+  --AND t2.brand_id NOT IN ('1', '10010', '10127')
+)
+
+SELECT t1.brand_id
+	   ,t1.storage_id
+	   ,t1.storage_name
+	   ,t2.target_time
+	   ,t2.target_kpi_value
+	   ,t2.last_modify_time
+FROM t1
+LEFT JOIN t2
+	   ON t1.storage_id = t2.storage_id
+;
+
+
+
+SELECT t1.brand_id
+	  ,t1.company_name
+	  ,SUM(CASE WHEN t1.target_kpi_value IS NULL THEN 1 ELSE 0 END) AS is_null_n
+	  ,SUM(CASE WHEN t1.target_kpi_value = 0 THEN 1 ELSE 0 END) AS is_0_n
+	  ,SUM(CASE WHEN t1.target_kpi_value > 0 THEN 1 ELSE 0 END) AS shezhi_n
+	  ,COUNT(*) AS total_n
+FROM
+(SELECT t1.brand_id
+	   ,t3.company_name
+	   ,t1.storage_id
+	   ,t1.storage_name
+	   ,t2.target_time
+	   ,t2.target_kpi_value
+	   ,t2.last_modify_time
+FROM
+(SELECT t1.brand_id
+	   ,t1.storage_id
+	   ,t1.storage_name
+FROM dianjia_bdc.dim_storage_info_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.storage_type = 1	-- 1-œﬂœ¬√≈µÍ£¨2-œﬂœ¬≤÷ø‚£¨3-œﬂ…œ≤÷ø‚£¨4-œﬂ…œ√≈µÍ
+  AND t1.storage_status = 1		-- 1-“—∆Ù”√£¨4-Õ£”√£¨9-“—πÿ±’
+  --AND t1.brand_id = '10091'
+  AND t1.brand_id NOT IN ('1', '10010', '10127')
+) AS t1
+LEFT JOIN
+(SELECT t2.storage_id
+	   ,t2.target_time
+	   ,t2.target_kpi_value
+	   ,t2.last_modify_time
+FROM dianjia_bdc.ods_brand_storage_kpi_target_dt AS t2
+WHERE t2.p_day = '20180819'
+  AND t2.target_type = 0
+  AND t2.target_time = '2018-08'
+  --AND t2.brand_id = '10091'
+  AND t2.brand_id NOT IN ('1', '10010', '10127')
+) AS t2
+ON t1.storage_id = t2.storage_id
+LEFT JOIN 
+(SELECT t3.brand_id
+	   ,t3.company_name	
+FROM dianjia_bdc.dim_brand_info_dt AS t3
+WHERE t3.p_day = '20180819'
+) AS t3
+ON t1.brand_id = t3.brand_id
+) AS t1
+GROUP BY t1.brand_id
+		,t1.company_name
+ORDER BY total_n DESC
+LIMIT 100
+;
+
+
+
+
+SELECT COUNT(*) AS count_n
+FROM 
+(SELECT t1.brand_id
+	   ,t1.storage_id
+	   ,t1.storage_name
+	   ,t2.target_time
+	   ,t2.target_kpi_value
+	   ,t2.last_modify_time
+FROM dianjia_bdc.dim_storage_info_dt AS t1
+LEFT JOIN dianjia_bdc.ods_brand_storage_kpi_target_dt AS t2
+	   ON t1.storage_id = t2.storage_id
+WHERE t1.p_day = '20180819'
+  AND t1.storage_type = 1	-- 1-œﬂœ¬√≈µÍ£¨2-œﬂœ¬≤÷ø‚£¨3-œﬂ…œ≤÷ø‚£¨4-œﬂ…œ√≈µÍ
+  AND t1.storage_status = 1		-- 1-“—∆Ù”√£¨4-Õ£”√£¨9-“—πÿ±’
+  AND t1.brand_id NOT IN ('1', '10010', '10127')
+  AND t2.p_day = '20180819'
+  AND t2.target_type = 0
+  AND t2.target_time = '2018-08'
+  AND t2.brand_id NOT IN ('1', '10010', '10127')
+) AS t1
+;
+
+-- µÍ≤÷–≈œ¢±Ì
+SELECT t1.*
+FROM dianjia_bdc.dim_storage_info_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.brand_id = '10091'
+  AND t1.storage_type = 1	-- 1-œﬂœ¬√≈µÍ£¨2-œﬂœ¬≤÷ø‚£¨3-œﬂ…œ≤÷ø‚£¨4-œﬂ…œ√≈µÍ
+  AND t1.storage_status = 1		-- 1-“—∆Ù”√£¨4-Õ£”√£¨9-“—πÿ±’
+LIMIT 50;
+
+
+-- µÍ≤÷µƒ∏˜÷÷◊¥Ã¨
+SELECT t1.storage_status
+		,t1.storage_type
+		,COUNT(storage_id) AS storage_count
+FROM dianjia_bdc.dim_storage_info_dt AS t1
+WHERE t1.p_day = '20180819'
+  AND t1.storage_type = 1
+  AND t1.brand_id NOT IN ('1', '10010', '10127')
+GROUP BY t1.storage_status
+		,t1.storage_type
+ORDER BY t1.storage_status
+		,t1.storage_type
+LIMIT 100;
+
+-- ∏˜∆∑≈∆”µ”–∂‡…Ÿº“œﬂœ¬√≈µÍ£ø
+SELECT t1.brand_id
+		,t2.brand_name
+		,COUNT(t1.storage_id) AS storage_count
+FROM dianjia_bdc.dim_storage_info_dt AS t1
+LEFT JOIN dianjia_bdc.dim_brand_info_dt AS t2
+	   ON t1.brand_id = t2.brand_id
+WHERE t1.p_day = '20180819'
+  AND t1.storage_type = 1
+  AND t1.storage_status = 1
+  AND t1.brand_id NOT IN ('1', '10010', '10127')
+GROUP BY t1.brand_id
+		,t2.brand_name
+ORDER BY storage_count DESC
+LIMIT 100;
+
+
+-- “µº®ƒø±Íµƒµº»Î»’÷æ
+-- ‘⁄≈‰÷√÷––ƒ(query.dianjia.io) ÷–≤È—Ø£¨≤È—Ø√≈µÍƒø±Íµº»Î»’÷æ
+SELECT t1.* 
+FROM amg_brand_target_opt_log AS t1
+WHERE opt_type = 1
+  AND target_type = 0    -- 0-‘¬ƒø±Í£ª1-»’ƒø±Í
+  AND target_time = '2018-08'   -- µº»Îµƒ‘¬∑›ªÚ’ﬂ»’∆⁄
+  AND brand_id NOT IN (10010, 10127)
+LIMIT 10;
+
+SELECT DISTINCT t1.brand_id
+FROM amg_brand_target_opt_log AS t1
+WHERE t1.opt_type = 1
+  AND t1.target_type = 0    -- 0-‘¬ƒø±Í£ª1-»’ƒø±Í
+  AND t1.target_time = '2018-08'   -- µº»Îµƒ‘¬∑›ªÚ’ﬂ»’∆⁄
+  AND t1.brand_id <> 10010
+
+-- ≤È—Ø∂‡…Ÿ∆∑≈∆≤Ÿ◊˜¡À“µº®ƒø±Í…Ë÷√
+SELECT t1.brand_id
+	  ,SUM(t1.input_count) AS input_count
+FROM
+(SELECT t1.brand_id
+	  	,COUNT(*) AS input_count
+FROM amg_brand_target_opt_log AS t1
+WHERE t1.opt_type = 1
+  AND t1.target_type = 0    -- 0-‘¬ƒø±Í£ª1-»’ƒø±Í
+  AND t1.target_time = '2018-08'   -- µº»Îµƒ‘¬∑›ªÚ’ﬂ»’∆⁄
+  AND t1.brand_id <> 10010
+GROUP BY t1.brand_id
+) AS t1
+GROUP BY t1.brand_id
+ORDER BY input_count DESC
+;
+
+
+-- À˘”–∆∑≈∆µƒª·‘±–≈œ¢∂º¥Ê∑≈‘⁄dwd_crm_custom_basic_info_dt±Ì÷–
+-- √øÃÏ“ª∏ˆøÏ’’
+
+-- ≤È—Ø«∞10∏ˆª·‘±µƒ–≈œ¢
+SELECT t1.*
+FROM dwd_crm_custom_basic_info_dt AS t1
+WHERE p_day = '20180719'
+LIMIT 10;
+
+-- ≤ª»•÷ÿ£¨≤È—Øª·‘± ˝¡ø[171W]
+SELECT COUNT(t1.custom_id) AS custom_n
+FROM dwd_crm_custom_basic_info_dt AS t1
+WHERE p_day = '20180719'
+;
+
+-- »•÷ÿ£¨≤È—Øª·‘± ˝¡ø[127W]
+-- ∏˘æ› ÷ª˙∫≈¬Î»•÷ÿ
+SELECT COUNT(DISTINCT t1.mobile_phone) AS custom_n
+FROM dwd_crm_custom_basic_info_dt AS t1
+WHERE p_day = '20180719'
+;
+
+-- ∏˜∏ˆ∆∑≈∆ª·‘± ˝¡ø
+SELECT t1.brand_id
+				,t1.brand_name
+				,COUNT(t1.custom_id) AS custom_n
+FROM dwd_crm_custom_basic_info_dt AS t1
+WHERE p_day = '20180719'
+GROUP BY t1.brand_id
+				,t1.brand_name
+ORDER BY custom_n DESC 
+LIMIT 100
+;
+
+-- “ª∏ˆª·‘±ª·Õ¨ ±◊¢≤·µΩ∂‡…Ÿ∏ˆ∆∑≈∆£ø
+-- ∏˜∆∑≈∆µƒª·‘±÷ÿ∫œ∂»”–∂‡∏ﬂ£ø[–≈œ¢±®∏Ê]
+SELECT brand_n
+				,COUNT(mobile_phone) AS custom_n
+FROM 
+(SELECT t1.mobile_phone
+				,COUNT(t1.brand_id) AS brand_n
+FROM dwd_crm_custom_basic_info_dt AS t1
+WHERE p_day = '20180719'
+GROUP BY t1.mobile_phone
+) AS t2
+GROUP BY brand_n
+;
+
+-- ±»Ωœ»˝≤ ∫Õ√ﬁπ∫µƒª·‘±÷ÿ∫œ∂»
+SELECT brand_n
+				,COUNT(mobile_phone) AS custom_n
+FROM 
+(SELECT t1.mobile_phone
+				,COUNT(t1.brand_id) AS brand_n
+FROM dwd_crm_custom_basic_info_dt AS t1
+WHERE t1.p_day = '20180719'
+	AND t1.brand_id IN ('10018', '10094')
+GROUP BY t1.mobile_phone
+) AS t2
+GROUP BY brand_n
+; 
+
+-- ∆∑≈∆Œ¨∂»±Ì£¨∞¸∫¨∏∏◊”∆∑≈∆
 SELECT *
 FROM dim_brand_child_relation_dt AS t1
 LIMIT 10;
--- Áà∂Â≠êÂìÅÁâåÂêàËÆ°879ÔºåÈáåÈù¢ÂåÖÊã¨ÊµãËØïÂ∏êÂè∑
+-- ∏∏◊”∆∑≈∆∫œº∆879£¨¿Ô√Ê∞¸¿®≤‚ ‘’ ∫≈
 SELECT COUNT(*)
 FROM dim_brand_child_relation_dt AS t1
 ;
 
 
---ÂìÅÁâåÊ≥¢ÊÆµ dim_brand_ranges_dt
+--∆∑≈∆≤®∂Œ dim_brand_ranges_dt
 -- ranges
 -- ranges_name
 
 
--- ÂÖ≥‰∫éÊó•ÊúüÁöÑÁª¥Â∫¶Ë°® dim_date
+-- πÿ”⁄»’∆⁄µƒŒ¨∂»±Ì dim_date
 SELECT *
 FROM dim_date AS t1
 LIMIT 10;
@@ -38,47 +335,47 @@ SELECT COUNT(*)
 FROM dim_date AS t1
 ;
 
--- ÊúÄÂ∞èÊó•Êúü 2016-01-01
+-- ◊Ó–°»’∆⁄ 2016-01-01
 SELECT MIN(t1.date_id)
 FROM dim_date AS t1
 ;
 
--- ÊúÄÂ§ßÊó•Êúü 2028-12-31
+-- ◊Ó¥Û»’∆⁄ 2028-12-31
 SELECT MAX(t1.date_id)
 FROM dim_date AS t1
 ;
 
 
--- sku‰ø°ÊÅØË°® dim_good_sku_base_info_dt
+-- sku–≈œ¢±Ì dim_good_sku_base_info_dt
 SELECT t1.*
 FROM dim_good_sku_base_info_dt AS t1
 WHERE t1.p_day = '20180327'
 LIMIT 10;
 
 
--- spu‰ø°ÊÅØË°® dim_good_spu_base_info_dt_v2 hue
--- Ê≥®ÊÑèË°®‰∏≠stringÁ±ªÂûãÁöÑÂ≠óÊÆµÔºå‰∏∫Á©∫Êó∂ÔºåÂÆûÈôÖ‰∏ä=''
--- Âõ†Ê≠§ÔºåÈÄâÊã©‰∏ç‰∏∫Á©∫Êó∂Â∫îÂÜôÊàê: != ''
--- spu_statusÁöÑÂê´‰πâ
+-- spu–≈œ¢±Ì dim_good_spu_base_info_dt_v2 hue
+-- ◊¢“‚±Ì÷–string¿‡–Õµƒ◊÷∂Œ£¨Œ™ø’ ±£¨ µº …œ=''
+-- “Ú¥À£¨—°‘Ò≤ªŒ™ø’ ±”¶–¥≥…: != ''
+-- spu_statusµƒ∫¨“Â
 SELECT t1.*
 FROM dim_good_spu_base_info_dt_v2 AS t1
 WHERE t1.p_day = '20180327'
-  AND t1.section != ''
+	AND t1.section != ''
 LIMIT 10;
 
--- spu‰ø°ÊÅØË°® dim_good_spu_base_info_dt ÈòøÈáåÊï∞Âä†
+-- spu–≈œ¢±Ì dim_good_spu_base_info_dt ∞¢¿Ô ˝º”
 SELECT t1.*
 FROM dim_good_spu_base_info_dt AS t1
 WHERE t1.p_day = '20180327'
 LIMIT 10;
--- Á±ªÁõÆÊï∞Èáè 230 Ëøô‰πàÂ§öÁ±ªÁõÆÔºüÈÉΩÊòØ‰∏ÄÁ∫ßÁ±ªÁõÆÔºü
+-- ¿‡ƒø ˝¡ø 230 ’‚√¥∂‡¿‡ƒø£ø∂º «“ªº∂¿‡ƒø£ø
 SELECT COUNT(DISTINCT t1.cat_name) AS cat_count
 FROM dim_good_spu_base_info_dt AS t1
 WHERE t1.p_day = '20180327'
 ;
--- ÂêÑÁ±ªÁõÆÁöÑspuÊï∞TOP30
--- ÈòøÈáåÊï∞Âä†‰∏≠ORDER BYÂøÖÈ°ªË∑üLIMIT
--- Á±ªÁõÆÁªìÊûÑÊÑüËßâËøò‰∏çÊòØÂæàÊ∏ÖÊô∞ÔºåÂêéÁª≠‰∫ÜËß£‰∏Ä‰∏ãÔºåÊúÄÂ•ΩÊâæÂà∞Áõ∏ÂÖ≥ÁöÑ‰∏öÂä°ÊñáÊ°£
+-- ∏˜¿‡ƒøµƒspu ˝TOP30
+-- ∞¢¿Ô ˝º”÷–ORDER BY±ÿ–Î∏˙LIMIT
+-- ¿‡ƒøΩ·ππ∏–æıªπ≤ª «∫‹«ÂŒ˙£¨∫Û–¯¡ÀΩ‚“ªœ¬£¨◊Ó∫√’“µΩœ‡πÿµƒ“µŒÒŒƒµµ
 SELECT t1.cat_name
 		,COUNT(t1.brand_spu_id) AS spu_count
 FROM dim_good_spu_base_info_dt AS t1
@@ -87,43 +384,43 @@ GROUP BY t1.cat_name
 ORDER BY spu_count DESC
 LIMIT 30
 ;
--- spuÁä∂ÊÄÅ spu_status 1„ÄÅ2„ÄÅ3ÂàÜÂà´‰ªÄ‰πàÂê´‰πâÔºü
+-- spu◊¥Ã¨ spu_status 1°¢2°¢3∑÷± ≤√¥∫¨“Â£ø
 SELECT t1.spu_status
 		,COUNT(t1.brand_spu_id) AS spu_count
 FROM dim_good_spu_base_info_dt AS t1
 WHERE t1.p_day = '20180327'
 GROUP BY t1.spu_status
 ;
--- spuÁõÆÂâçÊúâ‰ª•‰∏ãÂ±ûÊÄßÁª¥Â∫¶Ôºö
--- ÂìÅÁâåbrand„ÄÅÂ≠êÂìÅÁâåchild_brand„ÄÅÁ±ªÁõÆcat_name„ÄÅÂ§öÁ∫ßÁ±ªÁõÆcat_id1„ÄÅ2„ÄÅ3„ÄÅ4„ÄÅ5„ÄÅÂ§ß‰∏≠Â∞èÁ±ªbig_cat„ÄÅmiddle_cat„ÄÅsmall_cat
--- Âπ¥‰ªΩyear„ÄÅÂ≠£ËäÇseason„ÄÅÊ≥¢ÊÆµranges„ÄÅ‰∏äÂ∏ÇÊó∂Èó¥marker_time„ÄÅ‰∏äÂ∏ÇÂ§©Êï∞market_day
--- Á≥ªÂàóseriesÔºü„ÄÅÂïÜÂìÅÂ±ÇsectionÔºü„ÄÅÈ£éÊ†ºstyleÔºü Ëøô‰∏â‰∏™ÂàÜÂà´ÊòØÂ¶Ç‰ΩïÂÆö‰πâÁöÑÔºüÁâπÂà´ÊòØÂïÜÂìÅÂ±ÇÊòØ‰ªÄ‰πàÂê´‰πâÔºü
--- ÂêäÁâå‰ª∑suggest_price„ÄÅÈîÄÂîÆ‰ª∑sale_price ÂèØ‰ª•Â¢ûÂä†‰ª∑Ê†ºÂ∏¶Â≠óÊÆµÔºå‰∏çÂêåÂìÅÁâå„ÄÅÂìÅÁ±ªÔºå‰∏çÂêåÁöÑÂàíÂàÜÊ†áÂáÜ
--- Èù¢Êñôfabric_category„ÄÅÈù¢ÊñôÊàêÂàÜmain_fabric
+-- spuƒø«∞”–“‘œ¬ Ù–‘Œ¨∂»£∫
+-- ∆∑≈∆brand°¢◊”∆∑≈∆child_brand°¢¿‡ƒøcat_name°¢∂‡º∂¿‡ƒøcat_id1°¢2°¢3°¢4°¢5°¢¥Û÷––°¿‡big_cat°¢middle_cat°¢small_cat
+-- ƒÍ∑›year°¢ºæΩ⁄season°¢≤®∂Œranges°¢…œ – ±º‰marker_time°¢…œ –ÃÏ ˝market_day
+-- œµ¡–series£ø°¢…Ã∆∑≤„section£ø°¢∑Á∏Òstyle£ø ’‚»˝∏ˆ∑÷± «»Á∫Œ∂®“Âµƒ£øÃÿ± «…Ã∆∑≤„ « ≤√¥∫¨“Â£ø
+-- µı≈∆º€suggest_price°¢œ˙ €º€sale_price ø…“‘‘ˆº”º€∏Ò¥¯◊÷∂Œ£¨≤ªÕ¨∆∑≈∆°¢∆∑¿‡£¨≤ªÕ¨µƒªÆ∑÷±Í◊º
+-- √Ê¡œfabric_category°¢√Ê¡œ≥…∑÷main_fabric
 SELECT t1.*
 FROM dim_good_spu_base_info_dt AS t1
 WHERE t1.p_day = '20180327'
-  AND t1.fabric_category != ''
+	AND t1.fabric_category != ''
 LIMIT 10;
 
 
--- ÂØºË¥≠‰ø°ÊÅØË°® dim_guide_info_dt
+-- µºπ∫–≈œ¢±Ì dim_guide_info_dt
 SELECT t1.*
 FROM dim_guide_info_dt AS t1
 LIMIT 10;
 
 
--- Â∫ó‰ªì‰ø°ÊÅØË°® dim_storage_info_dt
--- storage_status 0,1,4,9 ÂàÜÂà´‰ªÄ‰πàÂê´‰πâÔºü
--- storage_type 0,1,2,3,4 ÂàÜÂà´‰ªÄ‰πàÂê´‰πâÔºü
--- channel_type 0‰ª£ÁêÜÂïÜ,1Âä†ÁõüÂïÜ,2Áõ¥Ëê•,3,5,6?
--- storage_groupÁõ∏ÂÖ≥ÔºåÂ∫ó‰ªìËÅîÁõüÔºåËÅîÁõüÂÜÖÈó®Â∫óÂ∫ìÂ≠òÂÖ±‰∫´
+-- µÍ≤÷–≈œ¢±Ì dim_storage_info_dt
+-- storage_status 0,1,4,9 ∑÷± ≤√¥∫¨“Â£ø
+-- storage_type 0,1,2,3,4 ∑÷± ≤√¥∫¨“Â£ø
+-- channel_type 0¥˙¿Ì…Ã,1º”√À…Ã,2÷±”™,3,5,6?
+-- storage_groupœ‡πÿ£¨µÍ≤÷¡™√À£¨¡™√Àƒ⁄√≈µÍø‚¥Êπ≤œÌ
 -- storage_grade
--- start_business_date:ÂºÄ‰∏öÊó•Êúü
--- circulation_flag ÊòØÂê¶ÂèÇ‰∏éÊµÅËΩ¨Ôºå‰ªÄ‰πàÂê´‰πâÔºü
--- acreage:Èù¢ÁßØÔºåÁúãÊù•Â∫ó‰ªìÁõÆÂâçÂè™Êúâ‰∏Ä‰∏™Èù¢ÁßØÔºåÂª∫ËÆÆÂå∫ÂàÜ‰ª•‰∏ãÁöÑÈù¢ÁßØÔºöËØïË°£Èó¥Èù¢ÁßØ„ÄÅÈó®Â∫ó‰ªìÂ∫ìÈù¢ÁßØ„ÄÅÈó®Â∫óÂèØÈôàÂàóÈù¢ÁßØ
--- pay_type:Êî∂Èì∂Á±ªÂûã,Ëá™Êî∂Èì∂ÔºåÈùûËá™Êî∂Èì∂
--- property_type:Áâ©‰∏öÁ±ªÂûãÔºåÂ§öÊï∞‰∏∫Á©∫ÔºåÁé∞Êúâ‰ª•‰∏ãÔºöMALL„ÄÅÁôæË¥ß„ÄÅÁâπÂçñÂú∫„ÄÅË°óÈÅì
+-- start_business_date:ø™“µ»’∆⁄
+-- circulation_flag  «∑Ò≤Œ”Î¡˜◊™£¨ ≤√¥∫¨“Â£ø
+-- acreage:√Êª˝£¨ø¥¿¥µÍ≤÷ƒø«∞÷ª”–“ª∏ˆ√Êª˝£¨Ω®“È«¯∑÷“‘œ¬µƒ√Êª˝£∫ ‘“¬º‰√Êª˝°¢√≈µÍ≤÷ø‚√Êª˝°¢√≈µÍø…≥¬¡–√Êª˝
+-- pay_type: ’“¯¿‡–Õ,◊‘ ’“¯£¨∑«◊‘ ’“¯
+-- property_type:ŒÔ“µ¿‡–Õ£¨∂‡ ˝Œ™ø’£¨œ÷”–“‘œ¬£∫MALL°¢∞Ÿªı°¢Ãÿ¬Ù≥°°¢Ω÷µ¿
 
 SELECT t1.*
 FROM dim_storage_info_dt AS t1
@@ -152,7 +449,7 @@ WHERE t1.p_day = '20180327'
 GROUP BY t1.channel_type
 ;
 -- storage_grade_id,storage_grade_name
--- ‰∏çÂêåÂìÅÁâåÊúâ‰∏çÂêåÁöÑÂàÜÁ∫ßÊ†áÂáÜ
+-- ≤ªÕ¨∆∑≈∆”–≤ªÕ¨µƒ∑÷º∂±Í◊º
 SELECT t1.brand_id
 		,t1.storage_grade_name
 		,COUNT(t1.storage_id) AS storage_count
@@ -177,7 +474,10 @@ GROUP BY t1.property_type
 ;
 
 
--- ‰∏çÁü•Ë°®ÂÖ∑‰ΩìÁî®ÈÄî dm_brand_dc_guide_member_dm
+
+
+
+-- ≤ª÷™±ÌæﬂÃÂ”√Õæ dm_brand_dc_guide_member_dm
 SELECT t1.*
 FROM dm_brand_dc_guide_member_dm AS t1
 WHERE t1.p_day = '20180327'
@@ -185,15 +485,72 @@ ORDER BY t1.new_member_count DESC
 LIMIT 10;
 
 
--- ÈîÄÂîÆÊó•Êä•Êï∞ÊçÆ dm_storage_day_report
--- Â≠òÊîæÂú®ÈòøÈáåÊï∞Âä†
+-- √≈µÍ√ø»’œ˙ €
+
+SELECT SUBSTR(t1.p_day, 1, 6) AS year_month
+				,SUM(t1.total_sale_money_kpi) AS total_sale_money_kpi
+FROM dm_storage_sale_dm AS t1
+WHERE t1.brand_id = '10091'
+	AND t1.p_day >= '20180101'
+	AND t1.p_day <= '20180730'
+GROUP BY SUBSTR(t1.p_day, 1, 6)
+ORDER BY year_month
+LIMIT 10
+;
+
+
+-- œ˙ €∂Óµƒµ•Œª «∑÷£¨º¥»Áπ˚“™Õ≥º∆µΩ‘™£¨–Ë“™≥˝“‘100£ª
 SELECT t1.*
-FROM dm_storage_day_report AS t1
-WHERE t1.p_day = '20180327'
+FROM dm_storage_sale_dm AS t1
+WHERE t1.brand_id = '10094'
+	AND t1.p_day = '20180727'
 LIMIT 20
 ;
--- ÊØèÂ§©Êàê‰∫§ÈáëÈ¢ù
--- Êï∞ÊçÆÈáèÂæàÂ§ßÔºå‰∏çÊòØÁúüÂÆûÊï∞ÊçÆÂêßÔºü
+
+-- …œ∫£√ﬁπ∫≤ø∑÷»’∆⁄µƒœ˙ €º˛ ˝”–ŒÛ£¨≥ˆœ÷Ωœ¥Ûµƒ∏∫ ˝£¨»Á2018-4-23£¨-2017£¨∑¢œ÷”–“ª∏ˆ…Ã∆∑"∂®Ω"µƒœ˙ €º˛ ˝Œ™∏∫£ª
+SELECT t1.p_day
+				,COUNT(DISTINCT t1.storage_id) AS store_num
+				,SUM(t1.total_sale_count_kpi) AS sale_goods_num
+				,SUM(t1.total_sale_money_kpi/100) AS sale_goods_amount
+				,SUM(t1.total_sale_money_kpi/100)/COUNT(DISTINCT t1.storage_id) AS avg_sale_amount 
+FROM dm_storage_sale_dm AS t1
+WHERE t1.brand_id = '10094'
+	AND t1.p_day >= '20180101'
+GROUP BY t1.p_day
+ORDER BY t1.p_day
+LIMIT 300
+;
+
+-- dm_storage_sale_dm:√øÃÏ¥Êµƒ «µ±ÃÏµƒ ˝æ›
+-- dm_storage_sale_dt:√øÃÏ¥Êµƒ «Ωÿ÷¡∏√ÃÏµƒ¿€º∆ ˝æ›£ª
+
+
+-- ≥…±æº€
+SELECT t1.*
+FROM dim_good_sku_base_info_dt AS t1
+WHERE t1.brand_id = '10094'
+	AND t1.p_day = '20180729'
+	AND t1.cost_price > 0
+ORDER BY brand_sku_id
+LIMIT 100
+;
+
+
+-- √≈µÍ–≈œ¢±Ì
+-- dim_storage_info_dt
+-- stotage_status: 1-∆Ù”√£¨4-Õ£”√£¨9-πÿ±’
+SELECT t1.*
+FROM dim_storage_info_dt AS t1
+WHERE t1.brand_id = '10094'
+	AND p_day = '20180729'
+ORDER BY t1.storage_code
+LIMIT 105
+;
+
+
+
+-- √øÃÏ≥…ΩªΩ∂Ó
+--  ˝æ›¡ø∫‹¥Û£¨≤ª «’Ê µ ˝æ›∞…£ø
 SELECT t1.p_day
 		,SUM(t1.total_sale_money) AS total_sale_money
 FROM dm_storage_day_report AS t1
@@ -201,26 +558,26 @@ GROUP BY t1.p_day
 ORDER BY t1.p_day
 LIMIT 100
 ;
--- ÊØèÂ§©Áº∫Ë¥ßÁéá
+-- √øÃÏ»±ªı¬ 
 SELECT t1.brand_id
-        ,t1.brand_name
-        ,t1.p_day
-        ,SUM(t1.total_sale_count_kpi) AS total_sale_count_kpi
-        ,SUM(t1.short_sale_count_kpi) AS short_sale_count_kpi
-        ,SUM(t1.short_sale_count_kpi)/SUM(t1.total_sale_count_kpi) AS short_sale_count_rate_kpi
+				,t1.brand_name
+				,t1.p_day
+				,SUM(t1.total_sale_count_kpi) AS total_sale_count_kpi
+				,SUM(t1.short_sale_count_kpi) AS short_sale_count_kpi
+				,SUM(t1.short_sale_count_kpi)/SUM(t1.total_sale_count_kpi) AS short_sale_count_rate_kpi
 FROM dm_storage_day_report AS t1
 WHERE t1.p_day >= '20180101'
-  AND t1.brand_id = '10091'
+	AND t1.brand_id = '10091'
 GROUP BY t1.brand_id
-        ,t1.brand_name
-        ,t1.p_day
+				,t1.brand_name
+				,t1.p_day
 ORDER BY t1.p_day
 LIMIT 100
 ;
 
 
 
--- ÂÆ¢Êà∑Âü∫Êú¨‰ø°ÊÅØË°® dm_custom_basic_info_dt
+-- øÕªßª˘±æ–≈œ¢±Ì dm_custom_basic_info_dt
 SELECT t1.*
 FROM dm_custom_basic_info_dt AS t1
 WHERE t1.p_day = '20180327'
@@ -228,8 +585,8 @@ LIMIT 10
 ;
 
 
--- ÂÖ≥ËÅîÈîÄÂîÆspuË°® dm_spu_order_join_sale_dm
--- ‰∏Ä‰∏™spuÂú®Âêå‰∏Ä‰∏™ËÆ¢Âçï‰∏≠ÔºåË∑üÂÖ∂‰ªñÂì™‰∫õspuÂÖ≥ËÅîË¥≠‰π∞
+-- πÿ¡™œ˙ €spu±Ì dm_spu_order_join_sale_dm
+-- “ª∏ˆspu‘⁄Õ¨“ª∏ˆ∂©µ•÷–£¨∏˙∆‰À˚ƒƒ–©spuπÿ¡™π∫¬Ú
 SELECT t1.*
 FROM dm_spu_order_join_sale_dm AS t1
 WHERE t1.p_day = '20180327'
@@ -237,35 +594,35 @@ LIMIT 10
 ;
 
 
--- ÂÖ≠‰∏ÅÁõÆÊùÉÈáçÊåáÊ†á ===================================
+-- ¡˘∂°ƒø»®÷ÿ÷∏±Í ===================================
 
--- 1.2015-2018‰∏âÂπ¥Â§öÁöÑÂéÜÂè≤ÈîÄÂîÆÊï∞ÊçÆ
+-- 1.2015-2018»˝ƒÍ∂‡µƒ¿˙ ∑œ˙ € ˝æ›
 -- hive
 WITH 
 t1 AS
 (SELECT t1.storage_id
-        ,t2.storage_name
-        ,t2.province_name
-        ,t2.city_name
-        ,t2.storage_group_name
-        ,t2.storage_level1_area_name
-        ,t1.p_day
-        ,SUM(t1.total_sale_money_kpi/100) AS total_sale_money_kpi
+				,t2.storage_name
+				,t2.province_name
+				,t2.city_name
+				,t2.storage_group_name
+				,t2.storage_level1_area_name
+				,t1.p_day
+				,SUM(t1.total_sale_money_kpi/100) AS total_sale_money_kpi
 FROM default.dm_storage_sale_dm AS t1
 LEFT JOIN default.dim_storage_info_dt AS t2
-       ON t1.storage_id = t2.storage_id
+			 ON t1.storage_id = t2.storage_id
 WHERE t1.brand_id = 10091
-  AND t1.p_day >= '20150101'
-  AND t1.p_day <= '20180413'
+	AND t1.p_day >= '20150101'
+	AND t1.p_day <= '20180413'
 GROUP BY t1.storage_id
-        ,t2.storage_name
-        ,t2.province_name
-        ,t2.city_name
-        ,t2.storage_group_name
-        ,t2.storage_level1_area_name
-        ,t1.p_day
+				,t2.storage_name
+				,t2.province_name
+				,t2.city_name
+				,t2.storage_group_name
+				,t2.storage_level1_area_name
+				,t1.p_day
 ),
--- Êó•Êúü
+-- »’∆⁄
 t2 AS
 (SELECT REGEXP_REPLACE(t1.date_id, '-', '') AS date_id
 		,t1.calendar_month
@@ -277,29 +634,29 @@ t2 AS
 FROM default.dim_date AS t1
 )
 SELECT t1.storage_id
-        ,t1.storage_name
-        ,t1.province_name
-        ,t1.city_name
-        ,t1.storage_group_name
-        ,t1.storage_level1_area_name
-        ,t1.p_day
+				,t1.storage_name
+				,t1.province_name
+				,t1.city_name
+				,t1.storage_group_name
+				,t1.storage_level1_area_name
+				,t1.p_day
 		,t2.calendar_month
 		,t2.day_of_month
 		,t2.day_of_week
 		,t2.day_of_week_name
 		,t2.holiday_mark
 		,t2.holiday_name
-        ,t1.total_sale_money_kpi
+				,t1.total_sale_money_kpi
 FROM t1
 LEFT JOIN t2 
-	   ON t1.p_day = t2.date_id
+		 ON t1.p_day = t2.date_id
 ORDER BY t1.storage_id
 		,t1.p_day
 --LIMIT 100
 ;
 
 
--- Êó•Êúü
+-- »’∆⁄
 SELECT REGEXP_REPLACE(t1.date_id, '-', '') AS date_id
 		,t1.calendar_month
 		,t1.day_of_month
@@ -309,13 +666,13 @@ SELECT REGEXP_REPLACE(t1.date_id, '-', '') AS date_id
 		,t1.holiday_name
 FROM default.dim_date AS t1
 WHERE t1.date_id >= '2016-01-01'
-  AND t1.date_id <= '2018-12-31'
+	AND t1.date_id <= '2018-12-31'
 ORDER BY date_id
 ;
 
 
 
--- ÂÖ≠‰∏ÅÁõÆÊùÉÈáçÊåáÊ†á ===================================
+-- ¡˘∂°ƒø»®÷ÿ÷∏±Í ===================================
 
 
 
