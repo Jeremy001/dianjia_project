@@ -36,6 +36,10 @@ ui <- dashboardPage(
       ### menuitem04 ===================================
       menuItem(
         text = '2018秋品订货分析', tabName = 'tab04'
+      ), 
+      ### menuitem05 ===================================
+      menuItem(
+        text = '库存分析', tabName = 'tab05'
       )
     )
   ), 
@@ -124,8 +128,10 @@ ui <- dashboardPage(
               width = 6)
         ),
         fluidRow(
+          box(highchartOutput('qiu_shangshi_boduan'), 
+              width = 4),
           box(highchartOutput('qiu_shangshi_date'), 
-              width = 12)
+              width = 8)
         )
       ),
       ### menuitem03 ===================================
@@ -275,6 +281,48 @@ ui <- dashboardPage(
         fluidRow(
           box(DTOutput('order_2018_qiu_table'), 
               width = 12)
+        ), 
+        fluidRow(
+          tabBox(
+            title = '2018订货量 VS 2017销售', 
+            id = 'tabset0401', 
+            width = 12,
+            height = '500px',
+            tabPanel(
+              '款数&数量', 
+              fluidRow(
+                box(highchartOutput('order_vs_sale_goods_count'), 
+                    width = 6), 
+                box(highchartOutput('order_vs_sale_sale_num'), 
+                    width = 6)
+              )
+            ), 
+            tabPanel(
+              '销售&吊牌金额', 
+              fluidRow(
+                box(highchartOutput('order_vs_sale_sale_amount'), 
+                    width = 6), 
+                box(highchartOutput('order_vs_sale_origin_amount'), 
+                    width = 6)
+              )
+            ), 
+            tabPanel(
+              '平均销售价&吊牌价', 
+              fluidRow(
+                box(highchartOutput('order_vs_sale_sale_price'), 
+                    width = 6),
+                box(highchartOutput('order_vs_sale_origin_price'), 
+                    width = 6)
+              )
+            )
+          )
+        )
+      ),
+      ### menuitem05 ===================================
+      tabItem(
+        tabName = 'tab05', 
+        fluidRow(
+          box()
         )
       )
     )
@@ -282,13 +330,14 @@ ui <- dashboardPage(
 )
 
 
-# 加载数据 ============================================================
-## 2017销售明细
+# 明细数据 ============================================================
+
+## 2017销售明细  ===========================
 wsm_sale_2017 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_sale_2017.csv", 
                             header = TRUE, 
                             sep = ',', 
                             stringsAsFactors = FALSE)
-### 数据格式
+### 修改数据格式
 wsm_sale_2017$sale_date <- as.Date(wsm_sale_2017$sale_date)
 wsm_sale_2017$sale_year <- year(wsm_sale_2017$sale_date)
 wsm_sale_2017$goods_year <- as.integer(wsm_sale_2017$goods_year)
@@ -298,13 +347,23 @@ wsm_sale_2017$sale_num <- as.integer(wsm_sale_2017$sale_num)
 wsm_sale_2017$sale_amount <- as.numeric(wsm_sale_2017$sale_amount)
 wsm_sale_2017$origin_amount <- as.numeric(wsm_sale_2017$origin_amount)
 
-## 商品信息
+# View(head(wsm_sale_2017, 30))
+
+# wsm_sale_2017 %>% 
+#   filter(sale_date >= '2017-07-01') %>% 
+#   group_by(store_id, store_name) %>% 
+#   summarise(goods_n = n()) %>% 
+#   View()
+
+
+## 商品信息  ================================
 wsm_goods_info <- read.table(file = "E:/dianjia/project_data/wsm/wsm_goods_info.csv", 
                              header = TRUE, 
                              sep = ',', 
                              stringsAsFactors = FALSE)
 wsm_goods_info$shangshi_date <- as.Date(wsm_goods_info$shangshi_date)
 
+## 汇总销售和商品 ===========================
 ## left_join，从商品信息表中获取goods_material,up_down,shangshi_date字段
 wsm_goods_sale_2017 <- left_join(x = wsm_sale_2017, 
                                  y = wsm_goods_info[, c('goods_id', 'goods_material', 'up_down', 'shangshi_date')],
@@ -312,13 +371,18 @@ wsm_goods_sale_2017 <- left_join(x = wsm_sale_2017,
 wsm_goods_sale_2017 <- wsm_goods_sale_2017 %>% 
   filter(sale_date <= '2017-12-31')
 
-## 2018Q3订货数据
-wsm_orders_2018q3 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_orders_2018q3.csv", 
+## 2018Q3订货数据 ===========================
+wsm_orders_2018q3 <- read.table(file = "E:/dianjia/project_data/wsm/wsm_orders_2018q3_v2.csv", 
                                 header = TRUE, 
                                 sep = ',', 
                                 stringsAsFactors = FALSE)
 wsm_orders_2018q3[is.na(wsm_orders_2018q3)] <- 0
 
+## 20180516库存数据 =========================
+goods_stock_20180516 <- read.table(file = "E:/dianjia/project_data/wsm/goods_stock_20180516.csv", 
+                                   header = TRUE, 
+                                   sep = ',', 
+                                   stringsAsFactors = FALSE)
 
 # 数据汇总 ============================================================
 
@@ -600,18 +664,74 @@ sale_order_qiu_cat1_sum$cat1_name <- '合计'
 sale_order_qiu_cat1_sum <- sale_order_qiu_cat1_sum[, c(9, 1:8)]
 sale_order_qiu_cat1 <- rbind(sale_order_qiu_cat1, sale_order_qiu_cat1_sum)
 sale_order_qiu_cat1 <- sale_order_qiu_cat1 %>% 
-  mutate(goods_num_duibi = round(goods_num*100/销售数量, 1), 
-         sale_amount_duibi = round(sale_amount*100/销售金额, 1), 
-         origin_amount_duibi = round(origin_amount*100/吊牌金额, 1), 
+  mutate(goods_num_duibi = round((goods_num/销售数量-1)*100, 1), 
+         sale_amount_duibi = round((sale_amount/销售金额-1)*100, 1), 
+         origin_amount_duibi = round((origin_amount/吊牌金额-1)*100, 1), 
          avg_sale_price_2017 = round(销售金额*10000/销售数量, 1), 
          avg_sale_price_2018 = round(sale_amount*10000/goods_num, 1), 
          avg_origin_price_2017 = round(吊牌金额*10000/销售数量, 1), 
          avg_origin_price_2018 = round(origin_amount*10000/goods_num, 1), 
-         origin_price_duibi = round(avg_origin_price_2018*100/avg_origin_price_2017, 1))
+         origin_price_duibi = round((avg_origin_price_2018/avg_origin_price_2017-1)*100, 1))
 sale_order_qiu_cat1 <- sale_order_qiu_cat1[, c(1:2, 6, 3, 7, 10, 4, 8, 11, 5, 9, 12, 13:17)]
-names(sale_order_qiu_cat1) <- c('类目','17款数','18款数','17数量','18数量','数量同比%','17金额','18金额',
-                                '金额同比%','17吊牌','18吊牌','吊牌同比%','17售价','18售价','17吊牌价', 
-                                '18吊牌价','吊牌价同比%')
+names(sale_order_qiu_cat1) <- c('类目','款数-17','款数-18','数量-17','数量-18','数量同比%','金额-17','金额-18',
+                                '金额同比%','吊牌-17','吊牌-18','吊牌同比%','售价-17','售价-18','吊牌价-17', 
+                                '吊牌价-18','吊牌价同比%')
+
+
+wsm_goods_info %>% 
+  filter(shangshi_date >= '2017-01-01', 
+         shangshi_date <= '2017-12-31', 
+         goods_season == '3-秋季') %>% 
+  group_by(shangshi_date) %>% 
+  summarise(goods_num = n()) %>% 
+  hchart(type = 'line', 
+         hcaes(x = shangshi_date, 
+               y = goods_num)) %>% 
+  hc_add_theme(hc_theme_flat()) %>% 
+  hc_title(text = '2017秋季新品上市节奏')
+
+wsm_sale_2017 %>% 
+  filter(sale_date >= '2017-06-01', 
+         sale_date <= '2017-08-31', 
+         goods_year == 2017, 
+         goods_season == '3-秋季', 
+         is_guoji == '应季') %>% 
+  group_by(sale_date) %>% 
+  summarise(sale_amount = sum(sale_amount)) %>% 
+  hchart(type = 'line', 
+         hcaes(x = sale_date, 
+               y = sale_amount)) %>% 
+  hc_add_theme(hc_theme_flat()) %>% 
+  hc_title(text = '2017秋季新品上市节奏')
+
+
+### 门店订货分析 ===============================
+#### 2017年各店销售秋季新品数据
+sale_store_2017 <- wsm_sale_2017 %>% 
+  filter(sale_date >= '2017-07-01', 
+         sale_date <= '2017-12-31', 
+         !region_name %in% c('电商', '一期特卖'), 
+         goods_year == 2017, 
+         goods_season == '3-秋季', 
+         is_guoji == '应季') %>% 
+  group_by(store_id, store_name) %>% 
+  summarise(sale_num_17 = sum(sale_num, na.rm = TRUE), 
+            sale_amount_17 = sum(sale_amount, na.rm = TRUE), 
+            origin_amount_17 = sum(origin_amount, na.rm = TRUE))
+#### 2018年各店秋季新品订货数据
+order_store_2018 <- wsm_orders_2018q3 %>% 
+  group_by(店铺编号,店铺名称) %>% 
+  summarise(goods_num_18 = sum(合计, na.rm = TRUE), 
+            sale_amount_18 = sum(吊牌额, na.rm = TRUE)*0.7, 
+            origin_amount_18 = sum(吊牌额, na.rm = TRUE))
+names(order_store_2018)[1:2] <- c('store_id', 'store_name')
+order_store_2018 <- order_store_2018[-c(1:2),]
+### 将2018年订货和2017年销售join到一张表中
+order_vs_sale_store <- order_store_2018 %>% 
+  left_join(sale_store_2017[, -2], 
+            by = c('store_id' = 'store_id')) %>% 
+  filter(!is.na(sale_num_17))
+
 
 # server.r ===================================================================================
 
@@ -869,6 +989,22 @@ server <- function(input, output){
       hc_add_theme(hc_theme_flat()) %>% 
       hc_title(text = '各类目秋季新品平均吊牌价')
   })
+  
+  output$qiu_shangshi_boduan <- renderHighchart({
+    wsm_goods_info %>% 
+      filter(shangshi_date >= '2017-01-01', 
+             shangshi_date <= '2017-12-31', 
+             goods_year == 2017, 
+             goods_season == '3-秋季') %>% 
+      group_by(goods_boduan) %>% 
+      summarise(goods_count = n()) %>% 
+      hchart(type = 'column', 
+             hcaes(x = goods_boduan, 
+                   y = goods_count)) %>% 
+      hc_add_theme(hc_theme_flat()) %>% 
+      hc_title(text = '2017秋季新品上市节奏 - 波段')
+  })
+  
   output$qiu_shangshi_date <- renderHighchart({
     wsm_goods_info %>% 
       filter(shangshi_date >= '2017-01-01', 
@@ -882,7 +1018,7 @@ server <- function(input, output){
                    group = cat1_name)) %>% 
       hc_plotOptions(column = list(stacking = 'fill')) %>% 
       hc_add_theme(hc_theme_flat()) %>% 
-      hc_title(text = '2017秋季新品上市节奏')
+      hc_title(text = '2017秋季新品上市节奏 - 日期')
   })
   
 
@@ -1232,31 +1368,93 @@ server <- function(input, output){
               rownames = FALSE, 
               extensions = 'Buttons', 
               options = list(
-                dom = 't', 
+                dom = 'fBt', 
                 buttons = c('excel', 'csv', 'copy'), 
                 pageLength = 20, 
                 columnDefs = list(list(className = 'dt-center', targets = 1:16), 
                                   list(width = '40px', targets = 1)))) %>%
       formatStyle('数量同比%',
-                  backgroundColor = styleInterval(100, c('orange', 'lightgreen'))) %>% 
+                  backgroundColor = styleInterval(0, c('orange', 'lightgreen'))) %>% 
       formatStyle('金额同比%',
-                  backgroundColor = styleInterval(100, c('orange', 'lightgreen'))) %>% 
+                  backgroundColor = styleInterval(0, c('orange', 'lightgreen'))) %>% 
       formatStyle('吊牌同比%',
-                  backgroundColor = styleInterval(100, c('orange', 'lightgreen'))) %>% 
+                  backgroundColor = styleInterval(0, c('orange', 'lightgreen'))) %>% 
       formatStyle('吊牌价同比%',
-                  backgroundColor = styleInterval(100, c('orange', 'lightgreen')))
+                  backgroundColor = styleInterval(0, c('orange', 'lightgreen')))
+  })
+  
+  output$order_vs_sale_goods_count <- renderHighchart({
+    highchart() %>% 
+      hc_chart(type = 'column') %>% 
+      hc_title(text = '款数对比') %>% 
+      hc_xAxis(categories = sale_order_qiu_cat1$类目[1:12]) %>% 
+      hc_yAxis(title = list(text = '款数')) %>% 
+      hc_add_series(name = '2017年', data = sale_order_qiu_cat1$`款数-17`[1:12]) %>% 
+      hc_add_series(name = '2018年', data = sale_order_qiu_cat1$`款数-18`[1:12]) %>% 
+      hc_add_theme(hc_theme_flat())
+  })
+  
+  output$order_vs_sale_sale_num <- renderHighchart({
+    highchart() %>% 
+      hc_chart(type = 'column') %>% 
+      hc_title(text = '数量对比') %>% 
+      hc_xAxis(categories = sale_order_qiu_cat1$类目[1:12]) %>% 
+      hc_yAxis(title = list(text = '数量')) %>% 
+      hc_add_series(name = '2017年', data = sale_order_qiu_cat1$`数量-17`[1:12]) %>% 
+      hc_add_series(name = '2018年', data = sale_order_qiu_cat1$`数量-18`[1:12]) %>% 
+      hc_add_theme(hc_theme_flat())
+  })
+  
+  output$order_vs_sale_sale_amount <- renderHighchart({
+    highchart() %>% 
+      hc_chart(type = 'column') %>% 
+      hc_title(text = '销售金额对比') %>% 
+      hc_xAxis(categories = sale_order_qiu_cat1$类目[1:12]) %>% 
+      hc_yAxis(title = list(text = '销售金额')) %>% 
+      hc_add_series(name = '2017年', data = sale_order_qiu_cat1$`金额-17`[1:12]) %>% 
+      hc_add_series(name = '2018年', data = sale_order_qiu_cat1$`金额-18`[1:12]) %>% 
+      hc_add_theme(hc_theme_flat())
+  })
+  
+  output$order_vs_sale_origin_amount <- renderHighchart({
+    highchart() %>% 
+      hc_chart(type = 'column') %>% 
+      hc_title(text = '吊牌金额对比') %>% 
+      hc_xAxis(categories = sale_order_qiu_cat1$类目[1:12]) %>% 
+      hc_yAxis(title = list(text = '吊牌金额')) %>% 
+      hc_add_series(name = '2017年', data = sale_order_qiu_cat1$`吊牌-17`[1:12]) %>% 
+      hc_add_series(name = '2018年', data = sale_order_qiu_cat1$`吊牌-18`[1:12]) %>% 
+      hc_add_theme(hc_theme_flat())
+  })
+  
+  output$order_vs_sale_sale_price <- renderHighchart({
+    highchart() %>% 
+      hc_chart(type = 'column') %>% 
+      hc_title(text = '销售价对比') %>% 
+      hc_xAxis(categories = sale_order_qiu_cat1$类目[1:12]) %>% 
+      hc_yAxis(title = list(text = '销售价')) %>% 
+      hc_add_series(name = '2017年', data = sale_order_qiu_cat1$`售价-17`[1:12]) %>% 
+      hc_add_series(name = '2018年', data = sale_order_qiu_cat1$`售价-18`[1:12]) %>% 
+      hc_add_theme(hc_theme_flat())
+  })
+  
+  output$order_vs_sale_origin_price <- renderHighchart({
+    highchart() %>% 
+      hc_chart(type = 'column') %>% 
+      hc_title(text = '吊牌价对比') %>% 
+      hc_xAxis(categories = sale_order_qiu_cat1$类目[1:12]) %>% 
+      hc_yAxis(title = list(text = '吊牌价')) %>% 
+      hc_add_series(name = '2017年', data = sale_order_qiu_cat1$`吊牌价-17`[1:12]) %>% 
+      hc_add_series(name = '2018年', data = sale_order_qiu_cat1$`吊牌价-18`[1:12]) %>% 
+      hc_add_theme(hc_theme_flat())
   })
   
 }
 
 
-
-
-
-
-
-
-
 # app ========================================================================================
 
 shinyApp(ui, server)
+
+
+

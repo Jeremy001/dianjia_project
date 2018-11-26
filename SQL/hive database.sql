@@ -14,6 +14,21 @@
 */
  
 
+
+-- 查询多导购订单数
+SELECT brand_id
+,is_multi_guides
+,COUNT(DISTINCT order_id) AS total_ord
+FROM dw_order_basic_info_ds
+WHERE p_day <= '20181121'
+AND p_day >= '20181115'
+AND order_type = '1'
+GROUP BY brand_id
+,is_multi_guides
+;
+
+
+
 -- 品牌维度表，包含父子品牌
 SELECT *
 FROM dim_brand_child_relation_dt AS t1
@@ -246,17 +261,17 @@ t1 AS
 (SELECT t1.storage_id
         ,t2.storage_name
         ,t2.province_name
-        ,t2.city_name
+        ,t2.city_name 
         ,t2.storage_group_name
         ,t2.storage_level1_area_name
         ,t1.p_day
         ,SUM(t1.total_sale_money_kpi/100) AS total_sale_money_kpi
-FROM default.dm_storage_sale_dm AS t1
-LEFT JOIN default.dim_storage_info_dt AS t2
+FROM dm_storage_sale_dm AS t1
+LEFT JOIN dim_storage_info_dt AS t2
        ON t1.storage_id = t2.storage_id
 WHERE t1.brand_id = 10091
   AND t1.p_day >= '20150101'
-  AND t1.p_day <= '20180413'
+  AND t1.p_day <= '20180518'
 GROUP BY t1.storage_id
         ,t2.storage_name
         ,t2.province_name
@@ -268,13 +283,13 @@ GROUP BY t1.storage_id
 -- 日期
 t2 AS
 (SELECT REGEXP_REPLACE(t1.date_id, '-', '') AS date_id
-		,t1.calendar_month
-		,t1.day_of_month
-		,t1.day_of_week
-		,t1.day_of_week_name
-		,t1.holiday_mark
-		,t1.holiday_name
-FROM default.dim_date AS t1
+    ,t1.calendar_month
+    ,t1.day_of_month
+    ,t1.day_of_week
+    ,t1.day_of_week_name
+    ,t1.holiday_mark
+    ,t1.holiday_name
+FROM dim_date AS t1
 )
 SELECT t1.storage_id
         ,t1.storage_name
@@ -283,18 +298,18 @@ SELECT t1.storage_id
         ,t1.storage_group_name
         ,t1.storage_level1_area_name
         ,t1.p_day
-		,t2.calendar_month
-		,t2.day_of_month
-		,t2.day_of_week
-		,t2.day_of_week_name
-		,t2.holiday_mark
-		,t2.holiday_name
+    ,t2.calendar_month
+    ,t2.day_of_month
+    ,t2.day_of_week
+    ,t2.day_of_week_name
+    ,t2.holiday_mark
+    ,t2.holiday_name
         ,t1.total_sale_money_kpi
 FROM t1
 LEFT JOIN t2 
-	   ON t1.p_day = t2.date_id
+     ON t1.p_day = t2.date_id
 ORDER BY t1.storage_id
-		,t1.p_day
+    ,t1.p_day
 --LIMIT 100
 ;
 
@@ -319,4 +334,101 @@ ORDER BY date_id
 
 
 
+
+
+
+
+-- 六町目销售预测 ====================================
+-- 1. 权重指数拆分
+-- 2. 天气
+
+WITH 
+-- 销售额
+t1 AS
+(SELECT t1.storage_id 
+    ,t2.storage_name
+    ,t2.province_name
+    ,t2.city_name
+    ,t1.p_day
+    ,SUM(t1.total_sale_money_kpi/100) AS total_sale_money_kpi
+FROM dm_storage_sale_dm AS t1
+LEFT JOIN dim_storage_info_dt AS t2
+       ON t1.storage_id = t2.storage_id
+WHERE t1.brand_id = 10091
+  AND t1.p_day >= '20160101'
+  AND t1.p_day <= '20180518'
+GROUP BY t1.storage_id
+    ,t2.storage_name
+    ,t2.province_name
+    ,t2.city_name
+    ,t1.p_day
+),
+-- 日期，星期和节假日标记
+t2 AS
+(SELECT REGEXP_REPLACE(t1.date_id, '-', '') AS date_id
+    ,t1.date_id AS date_id2
+    ,t1.day_of_week
+    ,t1.day_of_week_name
+    ,t1.holiday_mark
+    ,t1.holiday_name
+FROM dim_date AS t1
+)
+-- 汇总，得到
+SELECT t2.date_id2 AS sale_date
+    ,t1.province_name
+    ,t1.city_name
+    ,t1.storage_id
+    ,t1.storage_name
+    ,t2.day_of_week
+    ,t2.day_of_week_name
+    ,t2.holiday_mark
+    ,t2.holiday_name
+    ,t1.total_sale_money_kpi
+FROM t1
+LEFT JOIN t2 
+       ON t1.p_day = t2.date_id
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT p_day, 'v1' AS tt
+  , COALESCE(SUM(sale_count_refund), 0) AS refund_amount
+  , COALESCE(SUM(sale_money_refund), 0) AS refund_money
+  , COALESCE(SUM(ord_count_refund), 0) AS ord_count_refund
+  , COALESCE(SUM(spot_sale_money), 0) AS spot_sale_money_refund
+  , COALESCE(SUM(short_sale_money), 0) AS short_sale_money_refund
+  , COALESCE(SUM(spot_sale_count), 0) AS spot_sale_count_refund
+  , COALESCE(SUM(short_sale_count), 0) AS short_sale_count_refund
+FROM dw_order_refund_basic_info_1d
+WHERE p_day >= '20160601'
+  AND p_day <= '20161231'
+GROUP BY p_day;
+
+SELECT p_day, 'v2' AS tt
+  , COALESCE(SUM(total_sale_count_refund), 0) AS refund_amount
+  , COALESCE(SUM(total_sale_money_refund), 0) AS refund_money
+  , COALESCE(SUM(total_ord_count_refund), 0) AS ord_count_refund
+  , COALESCE(SUM(spot_sale_money_refund), 0) AS spot_sale_money_refund
+  , COALESCE(SUM(short_sale_money_refund), 0) AS short_sale_money_refund
+  , COALESCE(SUM(spot_sale_count_refund), 0) AS spot_sale_count_refund
+  , COALESCE(SUM(short_sale_count_refund), 0) AS short_sale_count_refund
+FROM dw_order_refund_basic_info_1d_v2
+WHERE p_day >= '20160601'
+  AND p_day <= '20161231'
+GROUP BY p_day;
 

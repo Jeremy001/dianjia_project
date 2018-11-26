@@ -158,7 +158,50 @@ write.csv(wsm_shangshi_2017,
 
 
 
+## 处理库存数据
+wsm_goods_stock <- read.table(file = "E:/dianjia/project_data/wsm/goods_stock_20180516.csv", 
+                            header = TRUE, 
+                            sep = ',', 
+                            stringsAsFactors = FALSE)
+View(head(wsm_goods_stock, 20))
+str(wsm_goods_stock)
 
+## 2017年秋季商品的库存数据
+wsm_goods_stock_2017qiu <- wsm_goods_stock %>% 
+  filter(年份 == 2017,
+         季节 == '3-秋季')
+
+write.csv(wsm_goods_stock_2017qiu, 
+          file = 'E:/dianjia/project_data/wsm/wsm_goods_stock_2017qiu.csv', 
+          row.names = FALSE)
+
+
+## 处理销售数据
+wsm_goods_sale_2017qiu <- read.table(file = "E:/dianjia/project_data/wsm/goods_sale_2017qiu.csv", 
+                              header = TRUE, 
+                              sep = ',', 
+                              stringsAsFactors = FALSE)
+View(head(wsm_goods_sale_2017qiu, 20))
+str(wsm_goods_sale_2017qiu)
+wsm_goods_sale_2017qiu$吊牌额 <- as.integer(wsm_goods_sale_2017qiu$吊牌额)
+wsm_goods_sale_2017qiu$实收金额 <- as.integer(wsm_goods_sale_2017qiu$实收金额)
+wsm_goods_sale_2017qiu[is.na(wsm_goods_sale_2017qiu)] <- 0
+
+
+## 汇总到品类
+wsm_goods_sale_2017qiu %>% 
+  group_by(品类) %>% 
+  summarise(sale_num = sum(数量), 
+            origin_amount = sum(吊牌额), 
+            sale_amount = sum(实收金额))
+
+
+## 汇总到skc
+wsm_goods_sale_2017qiu %>% 
+  group_by(款号, 色号) %>% 
+  summarise(sale_num = sum(数量), 
+            origin_amount = sum(吊牌额), 
+            sale_amount = sum(实收金额))
 
 
 

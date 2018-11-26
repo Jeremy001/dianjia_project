@@ -25,17 +25,96 @@ sale_2017 <- read.table(file = "E:/dianjia/project_data/xmoom/sale_2017.csv",
                         sep = ',', 
                         stringsAsFactors = FALSE)
 
-# ## 2018Q1销售额
-# sale_2018_q1 <- read.table(file = "./sale_2018q1.txt", 
-#                            header = TRUE, 
-#                            sep = '\t',
-#                            fileEncoding = "utf-16",
-#                            stringsAsFactors = FALSE)
+## 2018Q1销售额
+sale_2018_q1 <- read.table(file = "./sale_2018q1.txt",
+                           header = TRUE,
+                           sep = '\t',
+                           fileEncoding = "utf-16",
+                           stringsAsFactors = FALSE)
 
 ## union 2013-2017的5年数据
 sale_2013_2017 <- sale_2013_2015 %>% 
   rbind(sale_2016) %>% 
   rbind(sale_2017)
+
+
+
+### skc销售和库存数据
+## 2016销售额
+skc_sale_2016 <- read.table(file = "E:/dianjia/project_data/xmoom/skc_sale_2016.csv",
+                             header = TRUE, 
+                             sep = ',', 
+                             stringsAsFactors = FALSE)
+
+## 2017销售额
+skc_sale_2017 <- read.table(file = "E:/dianjia/project_data/xmoom/skc_sale_2017.csv",
+                            header = TRUE, 
+                            sep = ',', 
+                            stringsAsFactors = FALSE)
+## 201801—201802销售额
+skc_sale_201801_201802 <- read.table(file = "E:/dianjia/project_data/xmoom/skc_sale_201801_201802.csv",
+                        header = TRUE, 
+                        sep = ',', 
+                        stringsAsFactors = FALSE)
+## 销售数据合并到一张表
+skc_sale_2016_201802 <- skc_sale_2016 %>% 
+  rbind(skc_sale_2017) %>% 
+  rbind(skc_sale_201801_201802)
+skc_sale_2016_201802$日期 <- as.Date(skc_sale_2016_201802$日期)
+
+
+write.csv(skc_sale_2016_201802, 
+          file = 'E:/dianjia/project_data/xmoom/skc_sale_2016_201802.csv', 
+          row.names = FALSE)
+
+## 20170228库存
+skc_stock_20170228 <- read.table(file = "E:/dianjia/project_data/xmoom/skc_stock_20170228.csv",
+                            header = TRUE, 
+                            sep = ',', 
+                            stringsAsFactors = FALSE)
+## 创建列，把商品代码和颜色名称合并
+skc_stock_20170228$goods_color <- paste(skc_stock_20170228$商品代码, skc_stock_20170228$色号名称, sep = ':')
+names(skc_stock_20170228)[3] <- '库存件数2017'
+## 20180228库存
+skc_stock_20180228 <- read.table(file = "E:/dianjia/project_data/xmoom/skc_stock_20180228.csv",
+                                 header = TRUE, 
+                                 sep = ',', 
+                                 stringsAsFactors = FALSE)
+## 创建列，把商品代码和颜色名称合并
+skc_stock_20180228$goods_color <- paste(skc_stock_20180228$商品代码, skc_stock_20180228$色号名称, sep = ':')
+names(skc_stock_20180228)[3] <- '库存件数2018'
+## full join两个库存表
+skc_stock_20170228_20180228 <- full_join(x = skc_stock_20170228[, c(3, 4)], 
+                                         y = skc_stock_20180228[, c(3, 4)], 
+                                         by = c('goods_color' = 'goods_color'))
+
+write.csv(skc_stock_20170228_20180228, 
+          file = 'E:/dianjia/project_data/xmoom/skc_stock_20170228_20180228.csv', 
+          row.names = FALSE)
+
+
+
+
+skc_stock_20170228[1:10, c(1,2)]
+
+
+
+str(skc_stock_20170228_20180228)
+
+View(head(sale_skc_2016, 30))
+
+
+
+sale_2016 %>% 
+  group_by(商品属性6名称) %>% 
+  summarise(goods_n = n())
+
+
+
+
+
+
+
 
 ## 处理基础字段 ===================================================
 ## 去掉部分字段：拨段名称(重)15、商品属性6名称17、商品年份(重)23
